@@ -13,6 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
+import click
 
 
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+def locations():
+    pass
 # ============= EOF =============================================

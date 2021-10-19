@@ -33,6 +33,14 @@ PPM = {'name': 'Parts Per Million',
        'symbol': 'PPM',
        'definition': 'http://www.qudt.org/vocab/unit/PPM'}
 
+MG_PER_L = {'name': 'Milligrams Per Liter',
+            'symbol': 'mg/L',
+            'definition': 'http://www.qudt.org/vocab/unit/MilliGM-PER-L'}
+
+NPDES_PERMIT = {'name': 'NPDES Permit',
+                'symbol': 'p',
+                'definition': 'http://npdes.gov'}
+
 OM_CategoryObservation = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation'
 OM_CountObservation = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CountObservation'
 OM_Measurement = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement'
@@ -56,5 +64,8 @@ UNITS = {'foot': FOOT,
          'c': DEGC,
          'ppm': PPM,
          'gallon': GAL,
-         'gal': GAL}
+         'gal': GAL,
+         'mg_per_l': MG_PER_L,
+         'mg/l': MG_PER_L,
+         'npdes_permit': NPDES_PERMIT}
 # ============= EOF =============================================

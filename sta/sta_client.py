@@ -1,0 +1,364 @@
+# ===============================================================================
+# Copyright 2021 ross
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ===============================================================================
+import logging
+from datetime import datetime
+import paho.mqtt.client as mqtt
+import json
+import pyproj
+import requests
+import re
+
+from .definitions import OM_Measurement, FOOT
+
+projections = {}
+
+IDREGEX = re.compile(r'(?P<id>\(\d+\))')
+
+
+def get_items(start_url):
+    items = []
+
+    def rget(url):
+        resp = requests.get(url)
+        data = resp.json()
+        values = data['value']
+        logging.info('url={}, nvalues={}'.format(url, len(values)))
+
+        items.extend(values)
+        try:
+            next_url = data['@iot.nextLink']
+        except KeyError:
+            return
+        rget(next_url)
+
+    rget(start_url)
+    return items
+
+
+def make_st_time(ts):
+    for fmt in ('%Y-%m-%d', '%Y-%m-%dT%H:%M:%S'):
+        try:
+            t = datetime.strptime(ts, fmt)
+            return f'{t.isoformat()}.000Z'
+        except BaseException:
+            pass
+
+
+def make_geometry_point_from_utm(e, n, zone=None, ellps=None, srid=None):
+    if zone:
+        if zone in projections:
+            p = projections[zone]
+        else:
+            if ellps is None:
+                ellps = 'WGS84'
+            p = pyproj.Proj(proj='utm', zone=int(zone), ellps=ellps)
+            projections[zone] = p
+    elif srid:
+        # get zone
+        if srid in projections:
+            p = projections[srid]
+            projections[srid] = p
+        else:
+            # p = pyproj.Proj(proj='utm', zone=int(zone), ellps='WGS84')
+            p = pyproj.Proj('EPSG:{}'.format(srid))
+
+    lon, lat = p(e, n, inverse=True)
+    return make_geometry_point_from_latlon(lat, lon)
+
+
+def make_geometry_point_from_latlon(lat, lon):
+    return {'type': 'Point', 'coordinates': [lon, lat]}
+
+
+def iotid(iid):
+    return {'@iot.id': iid}
+
+
+class STAClient:
+    def __init__(self, host, user, pwd, port):
+        self._host = host
+        self._user = user
+        self._pwd = pwd
+        self._port = port
+
+    def get_locations(self, fs=None, orderby=None):
+        params = []
+        base = 'Locations'
+        if fs:
+            params.append(f'$filter={fs}')
+        if orderby:
+            params.append(f'$orderby={orderby}')
+
+        if params:
+            params = '&'.join(params)
+            base = f'{base}?{params}'
+
+        url = self._make_url(base)
+
+        return get_items(url)
+
+    def delete_location(self, iotid):
+        url = self._make_url(f'Locations({iotid})')
+        self.delete(url)
+
+    def add_observed_property(self, name, description, **kw):
+        obsprop_id = self.get_observed_property(name)
+        if obsprop_id is None:
+            payload = {'name': name,
+                       'description': description,
+                       'definition': 'No Definition',
+                       }
+            obsprop_id = self._add('ObservedProperties', payload)
+
+        return obsprop_id
+
+    def add_sensor(self, name, description):
+        sensor_id = self.get_sensor(name)
+        if sensor_id is None:
+            payload = {'name': name,
+                       'description': description,
+                       'encodingType': 'application/pdf',
+                       'metadata': 'No Metadata'
+                       }
+            sensor_id = self._add('Sensors', payload)
+
+        return sensor_id
+
+    def add_datastream(self, args, thing_id, obsprop_id, sensor_id,
+                       unit=None, otype=None):
+        properties = None
+        description = 'No Description'
+        if isinstance(args, str):
+            datastream_name = args
+        elif isinstance(args, dict):
+            datastream_name = args['name']
+            properties = args['properties']
+            description = args['description']
+        else:
+            datastream_name, properties = args
+
+        if unit is None:
+            unit = FOOT
+        if otype is None:
+            otype = OM_Measurement
+
+        payload = {'Thing': iotid(thing_id),
+                   'ObservedProperty': iotid(obsprop_id),
+                   'Sensor': iotid(sensor_id),
+                   'unitOfMeasurement': unit,
+                   'observationType': otype,
+                   'description': description,
+                   'name': datastream_name}
+
+        if properties:
+            payload['properties'] = properties
+
+        return self._add('Datastreams', payload)
+
+    def get_sensor(self, name):
+        return self._get_id('Sensors', name)
+
+    def get_observed_property(self, name):
+        return self._get_id('ObservedProperties', name)
+
+    def get_datastream(self, pointid, thing_name, datastream_name, sensor_name):
+        location_id = self._get_id('Locations', pointid)
+        if location_id:
+            thing_id = self.get_thing_id(thing_name, location_id)
+            datastream_id = self.get_datastream_id(datastream_name, sensor_name, thing_id)
+            return datastream_id
+
+    def get_last_thing(self):
+        pass
+
+    def get_last_observation(self, datastream_id):
+        url = self._make_url(f'Datastreams({datastream_id})/Observations?$orderby=phenomenonTime desc&$top=1')
+        logging.info(f'request url: {url}')
+        resp = requests.get(url)
+        v = resp.json()
+        logging.info(f'v {v}')
+
+        vs = v.get('value')
+        logging.info(f'vs {vs}')
+        if vs:
+            return vs[0].get('phenomenonTime')
+
+    def delete(self, url):
+        resp = requests.delete(url,
+                               auth=(self._user, self._pwd))
+        if resp.status_code!=200:
+            logging.info(resp, resp.text)
+
+    def patch(self, url, payload):
+        resp = requests.patch(url,
+                              auth=(self._user, self._pwd),
+                              json=payload)
+        if resp.status_code != 200:
+            logging.info(resp, resp.text)
+
+    def patch_thing(self, iotid, payload):
+        url = self._make_url(f'Things({iotid})')
+        self.patch(url, payload)
+
+    def patch_location(self, iotid, payload):
+        url = self._make_url(f'Locations({iotid})')
+        self.patch(url, payload)
+
+    def add_location(self, name, description, properties, utm=None, latlon=None, verbose=False):
+        lid = self.get_location_id(name)
+        if lid is None:
+
+            geometry = None
+            if utm:
+                geometry = make_geometry_point_from_utm(*utm)
+            elif latlon:
+                geometry = make_geometry_point_from_latlon(*latlon)
+
+            if geometry:
+                payload = {'name': name,
+                           'description': description,
+                           'properties': properties,
+                           'location': geometry,
+                           'encodingType': 'application/vnd.geo+json'
+                           }
+                return self._add('Locations', payload, verbose=verbose), True
+            else:
+                logging.info('failed to construct geometry. need to specify utm or latlon')
+                raise Exception
+        else:
+            self.patch_location(lid, {'properties': properties, 'description': description})
+            return lid, False
+
+    def add_thing(self, name, description, properties, location_id, check=True, verbose=False):
+        tid = None
+        if check:
+            tid = self.get_thing_id(name, location_id)
+
+        if tid is None:
+            payload = {'name': name,
+                       'description': description,
+                       'properties': properties,
+                       'Locations': [{'@iot.id': location_id}]}
+            return self._add('Things', payload, verbose=verbose)
+        else:
+            self.patch_thing(tid, {'properties': properties, 'description': description})
+        return tid
+
+    def add_observations(self, datastream_id, components, obs):
+        n = 100
+        nobs = len(obs)
+        # logging.info('nobservations: {}'.format(nobs))
+        for i in range(0, nobs, n):
+            chunk = obs[i:i + n]
+            pd = self.observation_payload(datastream_id, components, chunk)
+            # logging.info('payload {}'.format(pd))
+            url = self._make_url('CreateObservations')
+            logging.info('url: {}'.format(url))
+            resp = requests.post(url,
+                                 auth=('write', self._pwd),
+                                 json=pd)
+            logging.info('response {}, {}'.format(i, resp))
+
+    def observation_payload(self, datastream_id, components, data):
+        obj = {'Datastream': {'@iot.id': datastream_id},
+               'components': components,
+               'dataArray': data}
+        return [obj]
+
+    def get_location_id(self, name):
+        return self._get_id('Locations', name)
+
+    def get_datastream_id(self, name, sensor_name, thing_id):
+        tag = 'Datastreams'
+        if thing_id:
+            tag = f'Things({thing_id})/{tag}'
+
+        return self._get_id(tag, name, extra_args=f'$filter=Sensor/name eq \'{sensor_name}\'')
+
+    def get_thing_id(self, name, location_id=None):
+        tag = 'Things'
+        if location_id:
+            tag = f'Locations({location_id})/{tag}'
+
+        return self._get_id(tag, name)
+
+    def _get_id(self, tag, name, verbose=False, **kw):
+        vs = self._get_item_by_name(tag, name, **kw)
+        if vs:
+            iotid = vs[0]['@iot.id']
+            if verbose:
+                logging.info(f'Got tag={tag} name={name} iotid={iotid}')
+            return iotid
+
+    def _get_item_by_name(self, tag, name, extra_args=None, verbose=False):
+        tag = f"{tag}?$filter=name eq '{name}'"
+        if extra_args:
+            tag = f'{tag}&{extra_args}'
+        url = self._make_url(tag)
+        resp = requests.get(url, auth=('read', 'read'))
+        if verbose:
+            logging.info(f'Get item {tag} name={name}')
+
+        j = resp.json()
+        try:
+            return j['value']
+        except KeyError:
+            pass
+
+    def _add(self, tag, payload, extract_iotid=True, verbose=True):
+        url = self._make_url(tag)
+        if verbose:
+            logging.info(f'Add url={url}')
+            logging.info(f'Add payload={payload}')
+
+        resp = requests.post(url,
+                             auth=(self._user, self._pwd),
+                             json=payload)
+
+        if extract_iotid:
+            m = IDREGEX.search(resp.headers.get('location', ''))
+            # logging.info(f'Response={resp.json()}')
+
+            if m:
+                iotid = m.group('id')[1:-1]
+                if verbose:
+                    logging.info(f'added {tag} {iotid}')
+                return iotid
+            else:
+                logging.info(f'failed adding {tag} {payload}')
+                logging.info(f'Response={resp.json()}')
+
+    def _make_url(self, tag):
+        port = self._port
+        if not port or port == 80:
+            port = ''
+        else:
+            port = f':{port}'
+
+        return f'http://{self._host}{port}/FROST-Server/v1.1/{tag}'
+
+
+class STAMQTTClient:
+    def __init__(self, host):
+        self._client = mqtt.Client('STA')
+        self._client.connect(host)
+
+    def add_observations(self, datastream_id, payloads):
+        client = self._client
+        for payload in payloads:
+            client.publish(f'v1.0/Datastreams({datastream_id})/Observations',
+                           payload=json.dumps(payload))
+# ============= EOF =============================================
