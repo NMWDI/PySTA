@@ -21,7 +21,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysta",
-    version="0.0.1",
+    version="0.0.6",
     author='Jake Ross',
     description="Python SensorThings Client",
     long_description=long_description,
@@ -42,7 +42,7 @@ setup(
 
     python_requires=">=3.6",
     # include_package_data=True,
-    # packages=[""],
+    packages=["sta"],
     # package_data={
     #     # If any package contains *.txt or *.rst files, include them:
     #     "templates": ["*.template",],
