@@ -116,7 +116,7 @@ class STAClient:
         url = self._make_url(f'Locations({iotid})')
         self.delete(url)
 
-    def add_observed_property(self, name, description, **kw):
+    def put_observed_property(self, name, description, **kw):
         obsprop_id = self.get_observed_property(name)
         if obsprop_id is None:
             payload = {'name': name,
@@ -127,7 +127,7 @@ class STAClient:
 
         return obsprop_id
 
-    def add_sensor(self, name, description):
+    def put_sensor(self, name, description):
         sensor_id = self.get_sensor(name)
         if sensor_id is None:
             payload = {'name': name,
@@ -139,7 +139,7 @@ class STAClient:
 
         return sensor_id
 
-    def add_datastream(self, name, description, thing_id, obsprop_id, sensor_id,
+    def put_datastream(self, name, description, thing_id, obsprop_id, sensor_id,
                        properties=None,
                        unit=None, otype=None):
 
@@ -226,7 +226,7 @@ class STAClient:
         url = self._make_url(f'Datastreams({iotid})')
         self.patch(url, payload)
 
-    def add_location(self, name, description, properties, utm=None, latlon=None, verbose=False):
+    def put_location(self, name, description, properties, utm=None, latlon=None, verbose=False):
         lid = self.get_location_id(name)
         if lid is None:
 
@@ -251,7 +251,7 @@ class STAClient:
             self.patch_location(lid, {'properties': properties, 'description': description})
             return lid, False
 
-    def add_thing(self, name, description, properties, location_id, check=True, verbose=False):
+    def put_thing(self, name, description, properties, location_id, check=True, verbose=False):
         tid = None
         if check:
             tid = self.get_thing_id(name, location_id)
