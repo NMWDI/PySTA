@@ -18,54 +18,68 @@
 # eventually this extractor should pull this info from the cv service
 # instead of having it stored locally here
 
-FOOT = {'name': 'Foot',
-        'symbol': 'ft',
-        'definition': 'http://www.qudt.org/vocab/unit/FT'}
-DEGC = {'name': 'Degree Celsius',
-        'symbol': 'degC',
-        'definition': 'http://www.qudt.org/vocab/unit/DEG_C'}
+FOOT = {
+    "name": "Foot",
+    "symbol": "ft",
+    "definition": "http://www.qudt.org/vocab/unit/FT",
+}
+DEGC = {
+    "name": "Degree Celsius",
+    "symbol": "degC",
+    "definition": "http://www.qudt.org/vocab/unit/DEG_C",
+}
 
-GAL = {'name': 'Gallon',
-       'symbol': 'gal',
-       'definition': 'http://qudt.org/vocab/unit/GAL_US'}
+GAL = {
+    "name": "Gallon",
+    "symbol": "gal",
+    "definition": "http://qudt.org/vocab/unit/GAL_US",
+}
 
-PPM = {'name': 'Parts Per Million',
-       'symbol': 'PPM',
-       'definition': 'http://www.qudt.org/vocab/unit/PPM'}
+PPM = {
+    "name": "Parts Per Million",
+    "symbol": "PPM",
+    "definition": "http://www.qudt.org/vocab/unit/PPM",
+}
 
-MG_PER_L = {'name': 'Milligrams Per Liter',
-            'symbol': 'mg/L',
-            'definition': 'http://www.qudt.org/vocab/unit/MilliGM-PER-L'}
+MG_PER_L = {
+    "name": "Milligrams Per Liter",
+    "symbol": "mg/L",
+    "definition": "http://www.qudt.org/vocab/unit/MilliGM-PER-L",
+}
 
-NPDES_PERMIT = {'name': 'NPDES Permit',
-                'symbol': 'p',
-                'definition': 'http://npdes.gov'}
+NPDES_PERMIT = {"name": "NPDES Permit", "symbol": "p", "definition": "http://npdes.gov"}
 
-OM_CategoryObservation = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation'
-OM_CountObservation = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CountObservation'
-OM_Measurement = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement'
-OM_Observation = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation'
-OM_TruthObservation = 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TruthObservation'
+OM_CategoryObservation = (
+    "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation"
+)
+OM_CountObservation = (
+    "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CountObservation"
+)
+OM_Measurement = "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement"
+OM_Observation = "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation"
+OM_TruthObservation = (
+    "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TruthObservation"
+)
 
-OTYPES = {'double': OM_Measurement,
-          'uri': OM_CategoryObservation,
-          'integer': OM_CountObservation,
-          'any': OM_Observation,
-          'boolean': OM_TruthObservation}
+OTYPES = {
+    "double": OM_Measurement,
+    "uri": OM_CategoryObservation,
+    "integer": OM_CountObservation,
+    "any": OM_Observation,
+    "boolean": OM_TruthObservation,
+}
 
-CASTS = {'double': float,
-         'uri': str,
-         'integer': int,
-         'any': str,
-         'boolean': bool}
+CASTS = {"double": float, "uri": str, "integer": int, "any": str, "boolean": bool}
 
-UNITS = {'foot': FOOT,
-         'feet': FOOT,
-         'c': DEGC,
-         'ppm': PPM,
-         'gallon': GAL,
-         'gal': GAL,
-         'mg_per_l': MG_PER_L,
-         'mg/l': MG_PER_L,
-         'npdes_permit': NPDES_PERMIT}
+UNITS = {
+    "foot": FOOT,
+    "feet": FOOT,
+    "c": DEGC,
+    "ppm": PPM,
+    "gallon": GAL,
+    "gal": GAL,
+    "mg_per_l": MG_PER_L,
+    "mg/l": MG_PER_L,
+    "npdes_permit": NPDES_PERMIT,
+}
 # ============= EOF =============================================
