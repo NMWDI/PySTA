@@ -15,6 +15,8 @@
 # ===============================================================================
 import click
 
+from sta.client import Location, Client
+
 
 @click.group()
 def cli():
@@ -23,7 +25,9 @@ def cli():
 
 @cli.command()
 def locations():
-    pass
+    client = Client()
+    for li in client.get_locations():
+        click.secho(li)
 
 
 # ============= EOF =============================================
