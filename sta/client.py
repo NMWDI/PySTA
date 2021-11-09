@@ -22,6 +22,7 @@ import re
 
 IDREGEX = re.compile(r"(?P<id>\(\d+\))")
 
+
 class BaseST:
     iotid = None
     _db_obj = None
@@ -36,33 +37,31 @@ class BaseST:
             validate(instance=self._payload, schema=self._schema)
             return True
         except ValidationError as err:
-            print(f'Validation failed for {self.__class__.__name__}. {err}. {self._payload}')
+            print(
+                f"Validation failed for {self.__class__.__name__}. {err}. {self._payload}"
+            )
 
     def _generate_request(self, method, query=None):
-        base_url = self._connection['base_url']
-        if not base_url.startswith('http'):
-            base_url = f'https://{base_url}/FROST-Server/v1.1'
+        base_url = self._connection["base_url"]
+        if not base_url.startswith("http"):
+            base_url = f"https://{base_url}/FROST-Server/v1.1"
 
-        url = f'{base_url}/{self.__class__.__name__}'
+        url = f"{base_url}/{self.__class__.__name__}"
         if query:
-            url = f'{url}?$filter={quote_plus(query)}'
+            url = f"{url}?$filter={quote_plus(query)}"
 
-        return {'method': method,
-                'url': url
-                }
+        return {"method": method, "url": url}
 
     def _send_request(self, request, **kw):
         connection = self._connection
-        func = getattr(self._session, request['method'])
-        return func(request['url'],
-                    auth=(connection['user'],
-                          connection['pwd']), **kw)
+        func = getattr(self._session, request["method"])
+        return func(request["url"], auth=(connection["user"], connection["pwd"]), **kw)
 
     def _parse_response(self, request, resp):
-        if request['method'] == 'get':
+        if request["method"] == "get":
             if resp.status_code == 200:
                 return resp.json()
-        elif request['method'] == 'post':
+        elif request["method"] == "post":
             if resp.status_code == 201:
                 m = IDREGEX.search(resp.headers.get("location", ""))
                 if m:
@@ -76,22 +75,22 @@ class BaseST:
             if self.exists():
                 return self.patch()
             else:
-                request = self._generate_request('post')
+                request = self._generate_request("post")
                 resp = self._send_request(request, json=self._payload)
                 return self._parse_response(request, resp)
 
     def exists(self):
-        name = self._payload['name']
-        request = self._generate_request('get', query=f"name eq '{name}'")
+        name = self._payload["name"]
+        request = self._generate_request("get", query=f"name eq '{name}'")
         resp = self._send_request(request)
         resp = self._parse_response(request, resp)
         if resp:
             try:
-                self._db_obj = resp['value'][0]
+                self._db_obj = resp["value"][0]
             except IndexError:
                 return
 
-            self.iotid = self._db_obj['@iot.id']
+            self.iotid = self._db_obj["@iot.id"]
             return True
 
     def patch(self):
@@ -114,23 +113,23 @@ class Locations(BaseST):
             "name": {"type": "string"},
             "description": {"type": "string"},
             "encodingType": {"type": "string"},
-            "location": {"type": "object",
-                         "required": ["type", "coordinates"],
-                         "properties": {
-                             "type": {"type": "string"},
-                             "coordinates": {"type": "array",
-                                             "items": {"type": "number"}}}},
+            "location": {
+                "type": "object",
+                "required": ["type", "coordinates"],
+                "properties": {
+                    "type": {"type": "string"},
+                    "coordinates": {"type": "array", "items": {"type": "number"}},
+                },
+            },
             "properties": {"type": "object"},
         },
-        "required": ["name", "description", "encodingType", "location"]
+        "required": ["name", "description", "encodingType", "location"],
     }
 
 
 class Client:
     def __init__(self, base_url, user, pwd):
-        self._connection = {'base_url': base_url,
-                            'user': user,
-                            'pwd': pwd}
+        self._connection = {"base_url": base_url, "user": user, "pwd": pwd}
         self._session = Session()
 
     def put_location(self, payload):
@@ -154,4 +153,6 @@ class Client:
 
     def get_thing(self, query=None):
         return next(self.get_locations(query))
+
+
 # ============= EOF =============================================
