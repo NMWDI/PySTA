@@ -19,7 +19,6 @@ from requests import Session
 from jsonschema import validate, ValidationError
 import re
 
-
 IDREGEX = re.compile(r"(?P<id>\(\d+\))")
 
 
@@ -47,8 +46,11 @@ class BaseST:
             base_url = f"https://{base_url}/FROST-Server/v1.1"
 
         url = f"{base_url}/{self.__class__.__name__}"
-        if query:
-            url = f"{url}?$filter={quote_plus(query)}"
+        if method == 'patch':
+            url = f'{url}({self.iotid})'
+        else:
+            if query:
+                url = f"{url}?$filter={quote_plus(query)}"
 
         return {"method": method, "url": url}
 
@@ -68,7 +70,9 @@ class BaseST:
                     iotid = m.group("id")[1:-1]
                     self.iotid = iotid
                     return True
-        return resp
+        elif request['method'] == 'patch':
+            if resp.status_code == 200:
+                return True
 
     def put(self):
         if self._validate_payload():
@@ -94,7 +98,10 @@ class BaseST:
             return True
 
     def patch(self):
-        pass
+        if self._validate_payload():
+            request = self._generate_request("patch")
+            resp = self._send_request(request, json=self._payload)
+            return self._parse_response(request, resp)
 
     @classmethod
     def get(cls, query, connection):
@@ -153,6 +160,5 @@ class Client:
 
     def get_thing(self, query=None):
         return next(self.get_locations(query))
-
 
 # ============= EOF =============================================
