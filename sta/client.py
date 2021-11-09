@@ -46,8 +46,8 @@ class BaseST:
             base_url = f"https://{base_url}/FROST-Server/v1.1"
 
         url = f"{base_url}/{self.__class__.__name__}"
-        if method == 'patch':
-            url = f'{url}({self.iotid})'
+        if method == "patch":
+            url = f"{url}({self.iotid})"
         else:
             if query:
                 url = f"{url}?$filter={quote_plus(query)}"
@@ -70,7 +70,7 @@ class BaseST:
                     iotid = m.group("id")[1:-1]
                     self.iotid = iotid
                     return True
-        elif request['method'] == 'patch':
+        elif request["method"] == "patch":
             if resp.status_code == 200:
                 return True
 
@@ -160,5 +160,6 @@ class Client:
 
     def get_thing(self, query=None):
         return next(self.get_locations(query))
+
 
 # ============= EOF =============================================
