@@ -82,7 +82,7 @@ class BaseST:
         resp = self._send_request(request)
         resp = self._parse_response(request, resp)
         if resp:
-            return resp['value']
+            return resp["value"]
 
     def put(self):
         if self._validate_payload():
@@ -113,24 +113,25 @@ class BaseST:
 
 
 class Things(BaseST):
-    _schema = {'type': 'object',
-               'required': ['name', 'description'],
-               'properties': {
-                   'name': {'type': "string"},
-                   'description': {'type': 'string'},
-                   'Locations': {'type': 'array',
-                                 'required': ['@iot.id'],
-                                 'properties': {
-                                     '@iot.id': {'type': 'number'}
-                                     }
-                                 }
-                    }
-               }
+    _schema = {
+        "type": "object",
+        "required": ["name", "description"],
+        "properties": {
+            "name": {"type": "string"},
+            "description": {"type": "string"},
+            "Locations": {
+                "type": "array",
+                "required": ["@iot.id"],
+                "properties": {"@iot.id": {"type": "number"}},
+            },
+        },
+    }
+
     def exists(self):
         name = self._payload["name"]
         location = self._payload["Locations"][0]
-        lid = location['@iot.id']
-        resp = self.get(f"name eq '{name}'", entity=f'Locations({lid})/Things')
+        lid = location["@iot.id"]
+        resp = self.get(f"name eq '{name}'", entity=f"Locations({lid})/Things")
 
         if resp:
             try:
@@ -140,6 +141,7 @@ class Things(BaseST):
 
             self.iotid = self._db_obj["@iot.id"]
             return True
+
 
 class Locations(BaseST):
     _schema = {
@@ -188,5 +190,6 @@ class Client:
 
     def get_thing(self, query=None):
         return next(self.get_locations(query))
+
 
 # ============= EOF =============================================
