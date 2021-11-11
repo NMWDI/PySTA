@@ -40,12 +40,15 @@ class BaseST:
                 f"Validation failed for {self.__class__.__name__}. {err}. {self._payload}"
             )
 
-    def _generate_request(self, method, query=None):
+    def _generate_request(self, method, query=None, entity=None):
         base_url = self._connection["base_url"]
         if not base_url.startswith("http"):
             base_url = f"https://{base_url}/FROST-Server/v1.1"
 
-        url = f"{base_url}/{self.__class__.__name__}"
+        if entity is None:
+            entity = self.__class__.__name__
+
+        url = f"{base_url}/{entity}"
         if method == "patch":
             url = f"{url}({self.iotid})"
         else:
@@ -74,6 +77,13 @@ class BaseST:
             if resp.status_code == 200:
                 return True
 
+    def get(self, query, entity=None):
+        request = self._generate_request("get", query=query, entity=entity)
+        resp = self._send_request(request)
+        resp = self._parse_response(request, resp)
+        if resp:
+            return resp['value']
+
     def put(self):
         if self._validate_payload():
             if self.exists():
@@ -85,9 +95,7 @@ class BaseST:
 
     def exists(self):
         name = self._payload["name"]
-        request = self._generate_request("get", query=f"name eq '{name}'")
-        resp = self._send_request(request)
-        resp = self._parse_response(request, resp)
+        resp = self.get(f"name eq '{name}'")
         if resp:
             try:
                 self._db_obj = resp["value"][0]
@@ -103,15 +111,35 @@ class BaseST:
             resp = self._send_request(request, json=self._payload)
             return self._parse_response(request, resp)
 
-    @classmethod
-    def get(cls, query, connection):
-        payload = get_entity(cls.__name__, connection, query)
-        return cls(payload)
-
 
 class Things(BaseST):
-    pass
+    _schema = {'type': 'object',
+               'required': ['name', 'description'],
+               'properties': {
+                   'name': {'type': "string"},
+                   'description': {'type': 'string'},
+                   'Locations': {'type': 'array',
+                                 'required': ['@iot.id'],
+                                 'properties': {
+                                     '@iot.id': {'type': 'number'}
+                                     }
+                                 }
+                    }
+               }
+    def exists(self):
+        name = self._payload["name"]
+        location = self._payload["Locations"][0]
+        lid = location['@iot.id']
+        resp = self.get(f"name eq '{name}'", entity=f'Locations({lid})/Things')
 
+        if resp:
+            try:
+                self._db_obj = resp[0]
+            except IndexError:
+                return
+
+            self.iotid = self._db_obj["@iot.id"]
+            return True
 
 class Locations(BaseST):
     _schema = {
@@ -150,16 +178,15 @@ class Client:
         return thing
 
     def get_locations(self, query=None):
-        yield from Locations.get(query, self._session, self._connection)
+        yield from Locations(None, self._session, self._connection).get(query)
 
     def get_things(self, query=None):
-        yield from Things.get(query, self._session, self._connection)
+        yield from Things(None, self._session, self._connection).get(query)
 
     def get_location(self, query=None):
         return next(self.get_locations(query))
 
     def get_thing(self, query=None):
         return next(self.get_locations(query))
-
 
 # ============= EOF =============================================
