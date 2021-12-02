@@ -98,7 +98,7 @@ class BaseST:
         resp = self.get(f"name eq '{name}'")
         if resp:
             try:
-                self._db_obj = resp["value"][0]
+                self._db_obj = resp[0]
             except IndexError:
                 return
 
@@ -178,6 +178,11 @@ class Client:
         thing = Things(payload, self._session, self._connection)
         thing.put()
         return thing
+
+    def patch_location(self, iotid, payload):
+        location = Locations(payload, self._session, self._connection)
+        location.patch()
+        return location
 
     def get_locations(self, query=None):
         yield from Locations(None, self._session, self._connection).get(query)
