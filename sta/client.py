@@ -153,14 +153,60 @@ class Locations(BaseST):
             "location": {
                 "type": "object",
                 "required": ["type", "coordinates"],
-                "properties": {
-                    "type": {"type": "string"},
-                    "coordinates": {"type": "array", "items": {"type": "number"}},
-                },
+                "oneOf": [
+                    {
+                        "title": "Point",
+                        "type": "object",
+                        "properties": {
+                            "type": {"enum": ["Point"]},
+                            "coordinates": {"$ref": "#/definitions/position"}
+                        }
+                    },
+                    {
+                        "title": "Polygon",
+                        "type": "object",
+                        "properties": {
+                            "type": {"enum": ["Polygon"]},
+                            "coordinates": {"$ref": "#/definitions/polygon"}
+                        }
+                    }
+                ]
             },
-            "properties": {"type": "object"},
         },
         "required": ["name", "description", "encodingType", "location"],
+        "definitions": {
+            "position": {
+                "description": "A single position",
+                "type": "array",
+                "minItems": 2,
+                "items": [{"type": "number"}, {"type": "number"}],
+                "additionalItems": False
+            },
+            "positionArray": {
+                "description": "An array of positions",
+                "type": "array",
+                "items": {"$ref": "#/definitions/position"}
+            },
+            "lineString": {
+                "description": "An array of two or more positions",
+                "allOf": [
+                    {"$ref": "#/definitions/positionArray"},
+                    {"minItems": 2}
+                ]
+            },
+            "linearRing": {
+                "description": "An array of four positions where the first equals the last",
+                "allOf": [
+                    {"$ref": "#/definitions/positionArray"},
+                    {"minItems": 4}
+                ]
+            },
+            "polygon": {
+                "description": "An array of linear rings",
+                "type": "array",
+                "items": {"$ref": "#/definitions/linearRing"}
+            }
+        }
     }
 
 
