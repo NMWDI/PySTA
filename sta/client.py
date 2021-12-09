@@ -61,9 +61,12 @@ class BaseST:
         connection = self._connection
         func = getattr(self._session, request["method"])
         if not dry:
-            return func(request["url"], auth=(connection["user"], connection["pwd"]), **kw)
+            return func(
+                request["url"], auth=(connection["user"], connection["pwd"]), **kw
+            )
         else:
             return
+
     def _parse_response(self, request, resp, dry=False):
         if request["method"] == "get":
             if resp.status_code == 200:
@@ -90,7 +93,7 @@ class BaseST:
         if resp:
             return resp["value"]
         else:
-            print('request failed', request)
+            print("request failed", request)
 
     def put(self, dry=False):
         if self._validate_payload():
