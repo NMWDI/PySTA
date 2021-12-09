@@ -57,16 +57,22 @@ class BaseST:
 
         return {"method": method, "url": url}
 
-    def _send_request(self, request, **kw):
+    def _send_request(self, request, dry=False, **kw):
         connection = self._connection
         func = getattr(self._session, request["method"])
-        return func(request["url"], auth=(connection["user"], connection["pwd"]), **kw)
-
-    def _parse_response(self, request, resp):
+        if not dry:
+            return func(request["url"], auth=(connection["user"], connection["pwd"]), **kw)
+        else:
+            return
+    def _parse_response(self, request, resp, dry=False):
         if request["method"] == "get":
             if resp.status_code == 200:
                 return resp.json()
         elif request["method"] == "post":
+
+            if dry:
+                return True
+
             if resp.status_code == 201:
                 m = IDREGEX.search(resp.headers.get("location", ""))
                 if m:
@@ -83,15 +89,18 @@ class BaseST:
         resp = self._parse_response(request, resp)
         if resp:
             return resp["value"]
+        else:
+            print('request failed', request)
 
-    def put(self):
+    def put(self, dry=False):
         if self._validate_payload():
             if self.exists():
                 return self.patch()
             else:
                 request = self._generate_request("post")
-                resp = self._send_request(request, json=self._payload)
-                return self._parse_response(request, resp)
+                resp = self._send_request(request, json=self._payload, dry=dry)
+
+                return self._parse_response(request, resp, dry=dry)
 
     def exists(self):
         name = self._payload["name"]
@@ -105,11 +114,11 @@ class BaseST:
             self.iotid = self._db_obj["@iot.id"]
             return True
 
-    def patch(self):
+    def patch(self, dry=False):
         if self._validate_payload():
             request = self._generate_request("patch")
-            resp = self._send_request(request, json=self._payload)
-            return self._parse_response(request, resp)
+            resp = self._send_request(request, json=self._payload, dry=dry)
+            return self._parse_response(request, resp, dry=dry)
 
 
 class Things(BaseST):
@@ -209,19 +218,19 @@ class Client:
         self._connection = {"base_url": base_url, "user": user, "pwd": pwd}
         self._session = Session()
 
-    def put_location(self, payload):
+    def put_location(self, payload, dry=False):
         location = Locations(payload, self._session, self._connection)
-        location.put()
+        location.put(dry)
         return location
 
-    def put_thing(self, payload):
+    def put_thing(self, payload, dry=False):
         thing = Things(payload, self._session, self._connection)
-        thing.put()
+        thing.put(dry)
         return thing
 
-    def patch_location(self, iotid, payload):
+    def patch_location(self, iotid, payload, dry=False):
         location = Locations(payload, self._session, self._connection)
-        location.patch()
+        location.patch(dry)
         return location
 
     def get_locations(self, query=None):
