@@ -13,5 +13,10 @@ PySTA is developed by the New Mexico Water Data Initiative in collaboration with
 PySTA was started out of the NMWDI's need for simple python tools to load data into a SensorThings instance.
 
 
+## How to install
+PySTA can easily be installed via [PyPI.org](https://pypi.org/project/pysta/)
 
+```shell
+pip install pysta 
+```
 
