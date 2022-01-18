@@ -217,22 +217,28 @@ class Locations(BaseST):
 
 
 class Sensors(BaseST):
-    _schema = {"type": "object",
-               "required": ["name", "description", "encodingType", "metadata"],
-               "properties": {"name": {"type": "string"},
-                              "description": {"type": "string"},
-                              "encodingType": {"type": "string"},
-                              "metadata": {"type": "string"}
-                              }}
+    _schema = {
+        "type": "object",
+        "required": ["name", "description", "encodingType", "metadata"],
+        "properties": {
+            "name": {"type": "string"},
+            "description": {"type": "string"},
+            "encodingType": {"type": "string"},
+            "metadata": {"type": "string"},
+        },
+    }
 
 
 class ObservedProperties(BaseST):
-    _schema = {"type": "object",
-               "required": ["name", "definition", "description"],
-               "properties": {"name": {"type": "string"},
-                              "description": {"type": "string"},
-                              "definition": {"type": "string"}
-                              }}
+    _schema = {
+        "type": "object",
+        "required": ["name", "definition", "description"],
+        "properties": {
+            "name": {"type": "string"},
+            "description": {"type": "string"},
+            "definition": {"type": "string"},
+        },
+    }
 
 
 class Datastreams(BaseST):
@@ -241,27 +247,41 @@ class Datastreams(BaseST):
         "properties": {
             "name": {"type": "string"},
             "description": {"type": "string"},
-            "unitOfMeasurement": {"type": "object",
-                                  "required": ["name", "symbol", "definition"],
-                                  "properties": {"name": {"type": "string"},
-                                                 "symbol": {"type": "string"},
-                                                 "definition": {"type": "string"}}},
+            "unitOfMeasurement": {
+                "type": "object",
+                "required": ["name", "symbol", "definition"],
+                "properties": {
+                    "name": {"type": "string"},
+                    "symbol": {"type": "string"},
+                    "definition": {"type": "string"},
+                },
+            },
             "observationType": {"type": "string"},
-            "Thing": {"type": "object",
-                      "required": ["@iot.id"],
-                      "properties": {"@iot.id": {"type": "number"}},
-                      },
-            "ObservedProperty": {"type": "object",
-                                 "required": ["@iot.id"],
-                                 "properties": {"@iot.id": {"type": "number"}},
-                                 },
-            "Sensor": {"type": "object",
-                       "required": ["@iot.id"],
-                       "properties": {"@iot.id": {"type": "number"}},
-                       }
+            "Thing": {
+                "type": "object",
+                "required": ["@iot.id"],
+                "properties": {"@iot.id": {"type": "number"}},
+            },
+            "ObservedProperty": {
+                "type": "object",
+                "required": ["@iot.id"],
+                "properties": {"@iot.id": {"type": "number"}},
+            },
+            "Sensor": {
+                "type": "object",
+                "required": ["@iot.id"],
+                "properties": {"@iot.id": {"type": "number"}},
+            },
         },
-        "required": ["name", "description", "unitofMeasurement", "observationType", "Thing", "ObservedProperty",
-                     "Sensor"]
+        "required": [
+            "name",
+            "description",
+            "unitofMeasurement",
+            "observationType",
+            "Thing",
+            "ObservedProperty",
+            "Sensor",
+        ],
     }
 
     def exists(self):
@@ -335,5 +355,6 @@ class Client:
 
     def get_thing(self, query=None):
         return next(self.get_locations(query))
+
 
 # ============= EOF =============================================
