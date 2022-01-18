@@ -216,10 +216,89 @@ class Locations(BaseST):
     }
 
 
+class Sensors(BaseST):
+    _schema = {"type": "object",
+               "required": ["name", "description", "encodingType", "metadata"],
+               "properties": {"name": {"type": "string"},
+                              "description": {"type": "string"},
+                              "encodingType": {"type": "string"},
+                              "metadata": {"type": "string"}
+                              }}
+
+
+class ObservedProperties(BaseST):
+    _schema = {"type": "object",
+               "required": ["name", "definition", "description"],
+               "properties": {"name": {"type": "string"},
+                              "description": {"type": "string"},
+                              "definition": {"type": "string"}
+                              }}
+
+
+class Datastreams(BaseST):
+    _schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "description": {"type": "string"},
+            "unitOfMeasurement": {"type": "object",
+                                  "required": ["name", "symbol", "definition"],
+                                  "properties": {"name": {"type": "string"},
+                                                 "symbol": {"type": "string"},
+                                                 "definition": {"type": "string"}}},
+            "observationType": {"type": "string"},
+            "Thing": {"type": "object",
+                      "required": ["@iot.id"],
+                      "properties": {"@iot.id": {"type": "number"}},
+                      },
+            "ObservedProperty": {"type": "object",
+                                 "required": ["@iot.id"],
+                                 "properties": {"@iot.id": {"type": "number"}},
+                                 },
+            "Sensor": {"type": "object",
+                       "required": ["@iot.id"],
+                       "properties": {"@iot.id": {"type": "number"}},
+                       }
+        },
+        "required": ["name", "description", "unitofMeasurement", "observationType", "Thing", "ObservedProperty",
+                     "Sensor"]
+    }
+
+    def exists(self):
+        name = self._payload["name"]
+        thing = self._payload["Thing"]
+        lid = thing["@iot.id"]
+        resp = self.get(f"name eq '{name}'", entity=f"Things({lid})/Datastreams")
+
+        if resp:
+            try:
+                self._db_obj = resp[0]
+            except IndexError:
+                return
+
+            self.iotid = self._db_obj["@iot.id"]
+            return True
+
+
 class Client:
     def __init__(self, base_url, user, pwd):
         self._connection = {"base_url": base_url, "user": user, "pwd": pwd}
         self._session = Session()
+
+    def put_sensor(self, payload, dry=False):
+        sensor = Sensors(payload, self._session, self._connection)
+        sensor.put(dry)
+        return sensor
+
+    def put_observed_property(self, payload, dry=False):
+        obs = ObservedProperties(payload, self._session, self._connection)
+        obs.put(dry)
+        return obs
+
+    def put_datastream(self, payload, dry=False):
+        datastream = Datastreams(payload, self._session, self._connection)
+        datastream.put(dry)
+        return datastream
 
     def put_location(self, payload, dry=False):
         location = Locations(payload, self._session, self._connection)
@@ -236,6 +315,15 @@ class Client:
         location.patch(dry)
         return location
 
+    def get_sensors(self, query=None):
+        yield from Sensors(None, self._session, self._connection).get(query)
+
+    def get_observed_properties(self, query=None):
+        yield from ObservedProperties(None, self._session, self._connection).get(query)
+
+    def get_datastreams(self, query=None):
+        yield from Datastreams(None, self._session, self._connection).get(query)
+
     def get_locations(self, query=None):
         yield from Locations(None, self._session, self._connection).get(query)
 
@@ -247,6 +335,5 @@ class Client:
 
     def get_thing(self, query=None):
         return next(self.get_locations(query))
-
 
 # ============= EOF =============================================
