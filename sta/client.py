@@ -347,14 +347,19 @@ class Client:
     def get_locations(self, query=None):
         yield from Locations(None, self._session, self._connection).get(query)
 
-    def get_things(self, query=None):
-        yield from Things(None, self._session, self._connection).get(query)
+    def get_things(self, query=None, entity=None):
+        yield from Things(None, self._session, self._connection).get(query, entity)
 
     def get_location(self, query=None):
         return next(self.get_locations(query))
 
-    def get_thing(self, query=None):
-        return next(self.get_locations(query))
+    def get_thing(self, query=None, name=None, location=None):
+        entity = None
+        if location:
+            entity = 'Locations({})/Thing'.format(location)
+        if name is not None:
+            query = "name eq '{}'".format(name)
 
+        return next(self.get_things(query, entity))
 
 # ============= EOF =============================================
