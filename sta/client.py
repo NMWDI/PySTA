@@ -361,7 +361,7 @@ class Client:
     def get_thing(self, query=None, name=None, location=None):
         entity = None
         if location:
-            entity = "Locations({})/Thing".format(location)
+            entity = "Locations({})/Things".format(location)
         if name is not None:
             query = "name eq '{}'".format(name)
 
