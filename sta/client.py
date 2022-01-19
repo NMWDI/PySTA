@@ -66,10 +66,9 @@ class BaseST:
             )
             if verbose:
                 if resp and resp.status_code not in (200, 201):
-                    print(f'request={request}')
-                    print(f'response={resp}')
+                    print(f"request={request}")
+                    print(f"response={resp}")
             return resp
-
 
     def _parse_response(self, request, resp, dry=False):
         if request["method"] == "get":
