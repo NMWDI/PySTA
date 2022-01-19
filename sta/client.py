@@ -57,15 +57,19 @@ class BaseST:
 
         return {"method": method, "url": url}
 
-    def _send_request(self, request, dry=False, **kw):
+    def _send_request(self, request, dry=False, verbose=True, **kw):
         connection = self._connection
         func = getattr(self._session, request["method"])
         if not dry:
-            return func(
+            resp = func(
                 request["url"], auth=(connection["user"], connection["pwd"]), **kw
             )
-        else:
-            return
+            if verbose:
+                if resp and resp.status_code not in (200, 201):
+                    print(f'request={request}')
+                    print(f'response={resp}')
+            return resp
+
 
     def _parse_response(self, request, resp, dry=False):
         if request["method"] == "get":
