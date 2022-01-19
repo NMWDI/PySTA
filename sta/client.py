@@ -279,7 +279,7 @@ class Datastreams(BaseST):
         "required": [
             "name",
             "description",
-            "unitofMeasurement",
+            "unitOfMeasurement",
             "observationType",
             "Thing",
             "ObservedProperty",
