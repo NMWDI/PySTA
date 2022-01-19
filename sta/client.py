@@ -335,10 +335,15 @@ class Client:
         location.patch(dry)
         return location
 
-    def get_sensors(self, query=None):
+    def get_sensors(self, query=None, name=None):
+        if name is not None:
+            query = f"name eq '{name}'"
+
         yield from Sensors(None, self._session, self._connection).get(query)
 
-    def get_observed_properties(self, query=None):
+    def get_observed_properties(self, query=None, name=None):
+        if name is not None:
+            query = f"name eq '{name}'"
         yield from ObservedProperties(None, self._session, self._connection).get(query)
 
     def get_datastreams(self, query=None):
