@@ -48,18 +48,22 @@ def things(name, agency, verbose, out):
             click.secho(li)
 
     cnt = len(records)
-    click.secho(f'Found {cnt} Things')
+    click.secho(f"Found {cnt} Things")
 
     woutput(out, records, query, client.base_url)
 
 
 @cli.command()
-@click.option('--name')
-@click.option('--agency')
-@click.option('--pages', default=1, help='Number of pages of results to return. Each page is 1000 records by '
-                                         'default')
-@click.option('--verbose', default=False)
-@click.option('--out')
+@click.option("--name")
+@click.option("--agency")
+@click.option(
+    "--pages",
+    default=1,
+    help="Number of pages of results to return. Each page is 1000 records by "
+    "default",
+)
+@click.option("--verbose", default=False)
+@click.option("--out")
 def locations(name, agency, pages, verbose, out):
     client = Client()
 
@@ -70,18 +74,20 @@ def locations(name, agency, pages, verbose, out):
     if agency:
         query.append(f"properties/agency eq '{agency}'")
 
-    query = ' and '.join(query)
+    query = " and ".join(query)
     if verbose:
-        click.secho(f'query={query}')
+        click.secho(f"query={query}")
 
-    nrecords = woutput(out, client.get_locations(query=query, pages=pages), query, client.base_url)
-    click.secho(f'wrote nrecords={nrecords} to {out}')
+    nrecords = woutput(
+        out, client.get_locations(query=query, pages=pages), query, client.base_url
+    )
+    click.secho(f"wrote nrecords={nrecords} to {out}")
 
 
 def woutput(out, *args, **kw):
-    if out.endswith('.shp'):
+    if out.endswith(".shp"):
         func = shp_output
-    elif out.endswith('.csv'):
+    elif out.endswith(".csv"):
         func = csv_output
     else:
         func = json_output
@@ -91,31 +97,29 @@ def woutput(out, *args, **kw):
 def shp_output(out, records_generator, query, base_url):
     with shapefile.Writer(out) as w:
 
-        w.field('TEXT', 'C')
+        w.field("TEXT", "C")
         nrecords = 0
         for row in records_generator:
-            geom = row['location']
-            coords = geom['coordinates']
+            geom = row["location"]
+            coords = geom["coordinates"]
             w.point(*coords)
-            w.record(row['name'])
-            nrecords+=1
+            w.record(row["name"])
+            nrecords += 1
 
     return nrecords
 
 
 def json_output(out, records_generator, query, base_url):
     records = list(records_generator)
-    data = {'data': records,
-            'query': query,
-            'base_url': base_url}
-    with open(out, 'w') as wfile:
+    data = {"data": records, "query": query, "base_url": base_url}
+    with open(out, "w") as wfile:
         json.dump(data, wfile, indent=2)
     return len(records)
 
 
 def csv_output(out, records_generator, query, base_url):
-    with open(out, 'w') as wfile:
-        if out.endswith('.csv'):
+    with open(out, "w") as wfile:
+        if out.endswith(".csv"):
             writer = csv.writer(wfile)
             count = 0
             for emp in records_generator:
@@ -133,6 +137,6 @@ def csv_output(out, records_generator, query, base_url):
     return nrecords
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     locations()
 # ============= EOF =============================================

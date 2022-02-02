@@ -39,7 +39,7 @@ setup(
         "jsonschema",
         "pyodata",
         "pyyaml",
-        "pyshp"
+        "pyshp",
     ],
     entry_points={
         "console_scripts": [
