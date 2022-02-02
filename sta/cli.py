@@ -27,10 +27,10 @@ def cli():
 
 
 @cli.command()
-@click.option('--name')
-@click.option('--agency')
-@click.option('--verbose/--no-verbose', default=False)
-@click.option('--out')
+@click.option("--name")
+@click.option("--agency")
+@click.option("--verbose/--no-verbose", default=False)
+@click.option("--out")
 def things(name, agency, verbose, out):
     client = Client()
 
@@ -41,22 +41,22 @@ def things(name, agency, verbose, out):
     if agency:
         query.append(f"Locations/properties/agency eq '{agency}'")
 
-    query = ' and '.join(query)
+    query = " and ".join(query)
     records = list(client.get_things(query if query else None))
     if verbose:
         for li in records:
             click.secho(li)
 
     cnt = len(records)
-    click.secho(f'Found {cnt} Things')
+    click.secho(f"Found {cnt} Things")
     output(out, records, query, client.base_url)
 
 
 @cli.command()
-@click.option('--name')
-@click.option('--agency')
-@click.option('--verbose', default=False)
-@click.option('--out')
+@click.option("--name")
+@click.option("--agency")
+@click.option("--verbose", default=False)
+@click.option("--out")
 def locations(name, agency, verbose, out):
     client = Client()
 
@@ -67,21 +67,21 @@ def locations(name, agency, verbose, out):
     if agency:
         query.append(f"properties/agency eq '{agency}'")
 
-    query = ' and '.join(query)
+    query = " and ".join(query)
     records = list(client.get_locations(query))
     if verbose:
         for li in records:
             click.secho(li)
 
     cnt = len(records)
-    click.secho(f'Found {cnt} Locations')
+    click.secho(f"Found {cnt} Locations")
     output(out, records, query, client.base_url)
 
 
 def output(out, records, query, base_url):
     if out:
-        with open(out, 'w') as wfile:
-            if out.endswith('.csv'):
+        with open(out, "w") as wfile:
+            if out.endswith(".csv"):
                 writer = csv.writer(wfile)
                 count = 0
                 for emp in records:
@@ -94,14 +94,12 @@ def output(out, records, query, base_url):
                     # Writing data of CSV file
                     writer.writerow(emp.values())
             else:
-                data = {'data': records,
-                        'query': query,
-                        'base_url': base_url}
+                data = {"data": records, "query": query, "base_url": base_url}
                 json.dump(data, wfile, indent=2)
 
-            click.secho(f'wrote nrecords={len(records)} to {out}')
+            click.secho(f"wrote nrecords={len(records)} to {out}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     things()
 # ============= EOF =============================================
