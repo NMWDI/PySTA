@@ -91,14 +91,26 @@ class BaseST:
             if resp.status_code == 200:
                 return True
 
-    def get(self, query, entity=None):
-        request = self._generate_request("get", query=query, entity=entity)
-        resp = self._send_request(request)
-        resp = self._parse_response(request, resp)
-        if resp:
-            return resp["value"]
-        else:
-            print("request failed", request)
+    def get(self, query, entity=None, pages=None):
+        def get_items(request, page_count):
+            if pages:
+                if page_count >= pages:
+                    return
+                print(f'getting page={page_count + 1}/{pages} for request={request}')
+
+            resp = self._send_request(request)
+            resp = self._parse_response(request, resp)
+            for v in resp['value']:
+                yield v
+            try:
+                next_url = resp["@iot.nextLink"]
+            except KeyError:
+                return
+
+            yield from get_items({'method': 'get', 'url': next_url}, page_count + 1)
+
+        start_request = self._generate_request("get", query=query, entity=entity)
+        yield from get_items(start_request, 0)
 
     def put(self, dry=False):
         if self._validate_payload():
@@ -373,8 +385,8 @@ class Client:
     def get_datastreams(self, query=None):
         yield from Datastreams(None, self._session, self._connection).get(query)
 
-    def get_locations(self, query=None):
-        yield from Locations(None, self._session, self._connection).get(query)
+    def get_locations(self, query=None, pages=None):
+        yield from Locations(None, self._session, self._connection).get(query, pages=pages)
 
     def get_things(self, query=None, entity=None):
         yield from Things(None, self._session, self._connection).get(query, entity)

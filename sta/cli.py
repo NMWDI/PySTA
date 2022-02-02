@@ -15,7 +15,7 @@
 # ===============================================================================
 import csv
 import json
-
+import shapefile
 import click
 
 from sta.client import Client
@@ -48,16 +48,19 @@ def things(name, agency, verbose, out):
             click.secho(li)
 
     cnt = len(records)
-    click.secho(f"Found {cnt} Things")
-    output(out, records, query, client.base_url)
+    click.secho(f'Found {cnt} Things')
+
+    woutput(out, records, query, client.base_url)
 
 
 @cli.command()
-@click.option("--name")
-@click.option("--agency")
-@click.option("--verbose", default=False)
-@click.option("--out")
-def locations(name, agency, verbose, out):
+@click.option('--name')
+@click.option('--agency')
+@click.option('--pages', default=1, help='Number of pages of results to return. Each page is 1000 records by '
+                                         'default')
+@click.option('--verbose', default=False)
+@click.option('--out')
+def locations(name, agency, pages, verbose, out):
     client = Client()
 
     query = []
@@ -67,39 +70,69 @@ def locations(name, agency, verbose, out):
     if agency:
         query.append(f"properties/agency eq '{agency}'")
 
-    query = " and ".join(query)
-    records = list(client.get_locations(query))
+    query = ' and '.join(query)
     if verbose:
-        for li in records:
-            click.secho(li)
+        click.secho(f'query={query}')
 
-    cnt = len(records)
-    click.secho(f"Found {cnt} Locations")
-    output(out, records, query, client.base_url)
+    nrecords = woutput(out, client.get_locations(query=query, pages=pages), query, client.base_url)
+    click.secho(f'wrote nrecords={nrecords} to {out}')
 
 
-def output(out, records, query, base_url):
-    if out:
-        with open(out, "w") as wfile:
-            if out.endswith(".csv"):
-                writer = csv.writer(wfile)
-                count = 0
-                for emp in records:
-                    if count == 0:
-                        # Writing headers of CSV file
-                        header = emp.keys()
-                        writer.writerow(header)
-                        count += 1
-
-                    # Writing data of CSV file
-                    writer.writerow(emp.values())
-            else:
-                data = {"data": records, "query": query, "base_url": base_url}
-                json.dump(data, wfile, indent=2)
-
-            click.secho(f"wrote nrecords={len(records)} to {out}")
+def woutput(out, *args, **kw):
+    if out.endswith('.shp'):
+        func = shp_output
+    elif out.endswith('.csv'):
+        func = csv_output
+    else:
+        func = json_output
+    return func(out, *args, **kw)
 
 
-if __name__ == "__main__":
-    things()
+def shp_output(out, records_generator, query, base_url):
+    with shapefile.Writer(out) as w:
+
+        w.field('TEXT', 'C')
+        nrecords = 0
+        for row in records_generator:
+            geom = row['location']
+            coords = geom['coordinates']
+            w.point(*coords)
+            w.record(row['name'])
+            nrecords+=1
+
+    return nrecords
+
+
+def json_output(out, records_generator, query, base_url):
+    records = list(records_generator)
+    data = {'data': records,
+            'query': query,
+            'base_url': base_url}
+    with open(out, 'w') as wfile:
+        json.dump(data, wfile, indent=2)
+    return len(records)
+
+
+def csv_output(out, records_generator, query, base_url):
+    with open(out, 'w') as wfile:
+        if out.endswith('.csv'):
+            writer = csv.writer(wfile)
+            count = 0
+            for emp in records_generator:
+                if count == 0:
+                    # Writing headers of CSV file
+                    header = emp.keys()
+                    writer.writerow(header)
+
+                # Writing data of CSV file
+                writer.writerow(emp.values())
+                count += 1
+
+            nrecords = count
+
+    return nrecords
+
+
+if __name__ == '__main__':
+    locations()
 # ============= EOF =============================================
