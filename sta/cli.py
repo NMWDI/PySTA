@@ -30,7 +30,7 @@ def cli():
 @click.option("--name")
 @click.option("--agency")
 @click.option("--verbose/--no-verbose", default=False)
-@click.option("--out", default='out.json')
+@click.option("--out", default="out.json")
 def things(name, agency, verbose, out):
     client = Client()
 
@@ -50,27 +50,31 @@ def things(name, agency, verbose, out):
     cnt = len(records)
     click.secho(f"Found {cnt} Things")
 
-    if out == 'out.json':
-        out = 'out.things.json'
+    if out == "out.json":
+        out = "out.things.json"
 
     woutput(out, records, query, client.base_url)
 
 
 @cli.command()
-@click.option("--name", help='Filter Locations by name')
-@click.option("--agency", help='Filter Locations by agency')
+@click.option("--name", help="Filter Locations by name")
+@click.option("--agency", help="Filter Locations by agency")
 @click.option("--query")
 @click.option(
     "--pages",
     default=1,
     help="Number of pages of results to return. Each page is 1000 records by "
-         "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
-         "descending sorting",
+    "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
+    "descending sorting",
 )
 @click.option("--verbose", default=False)
-@click.option("--out", default='out.json', help='Location to save file. use file extension to define output type. '
-                                                'valid extensions are .shp, .csv, and .json. JSON output is used by '
-                                                'default')
+@click.option(
+    "--out",
+    default="out.json",
+    help="Location to save file. use file extension to define output type. "
+    "valid extensions are .shp, .csv, and .json. JSON output is used by "
+    "default",
+)
 def locations(name, agency, query, pages, verbose, out):
     client = Client()
 
@@ -88,12 +92,10 @@ def locations(name, agency, query, pages, verbose, out):
     if verbose:
         click.secho(f"query={query}")
 
-    if out == 'out.json':
-        out = 'out.locations.json'
+    if out == "out.json":
+        out = "out.locations.json"
 
-    woutput(
-        out, client.get_locations(query=query, pages=pages), query, client.base_url
-    )
+    woutput(out, client.get_locations(query=query, pages=pages), query, client.base_url)
 
 
 def woutput(out, *args, **kw):

@@ -44,7 +44,7 @@ class BaseST:
 
     def _generate_request(self, method, query=None, entity=None, orderby=None):
         if orderby is None:
-            orderby = '$orderby=id asc'
+            orderby = "$orderby=id asc"
 
         base_url = self._connection["base_url"]
         if not base_url.startswith("http"):
@@ -62,7 +62,7 @@ class BaseST:
                 params.append(orderby)
 
             if query:
-                params.append(f'$filter={quote_plus(query)}')
+                params.append(f"$filter={quote_plus(query)}")
 
             if params:
                 url = f"{url}?{'&'.join(params)}"
@@ -105,7 +105,7 @@ class BaseST:
         orderby = None
         if pages < 0:
             pages = abs(pages)
-            orderby = '$orderby=id desc'
+            orderby = "$orderby=id desc"
 
         def get_items(request, page_count):
             if pages:
@@ -124,7 +124,9 @@ class BaseST:
 
             yield from get_items({"method": "get", "url": next_url}, page_count + 1)
 
-        start_request = self._generate_request("get", query=query, entity=entity, orderby=orderby)
+        start_request = self._generate_request(
+            "get", query=query, entity=entity, orderby=orderby
+        )
         yield from get_items(start_request, 0)
 
     def put(self, dry=False):
@@ -419,5 +421,6 @@ class Client:
             query = "name eq '{}'".format(name)
 
         return next(self.get_things(query, entity))
+
 
 # ============= EOF =============================================
