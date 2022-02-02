@@ -42,7 +42,10 @@ class BaseST:
                 f"Validation failed for {self.__class__.__name__}. {err}. {self._payload}"
             )
 
-    def _generate_request(self, method, query=None, entity=None):
+    def _generate_request(self, method, query=None, entity=None, orderby=None):
+        if orderby is None:
+            orderby = '$orderby=id asc'
+
         base_url = self._connection["base_url"]
         if not base_url.startswith("http"):
             base_url = f"https://{base_url}/FROST-Server/v1.1"
@@ -54,8 +57,15 @@ class BaseST:
         if method == "patch":
             url = f"{url}({self.iotid})"
         else:
+            params = []
+            if orderby:
+                params.append(orderby)
+
             if query:
-                url = f"{url}?$filter={quote_plus(query)}"
+                params.append(f'$filter={quote_plus(query)}')
+
+            if params:
+                url = f"{url}?{'&'.join(params)}"
 
         return {"method": method, "url": url}
 
@@ -92,6 +102,11 @@ class BaseST:
                 return True
 
     def get(self, query, entity=None, pages=None):
+        orderby = None
+        if pages < 0:
+            pages = abs(pages)
+            orderby = '$orderby=id desc'
+
         def get_items(request, page_count):
             if pages:
                 if page_count >= pages:
@@ -109,7 +124,7 @@ class BaseST:
 
             yield from get_items({"method": "get", "url": next_url}, page_count + 1)
 
-        start_request = self._generate_request("get", query=query, entity=entity)
+        start_request = self._generate_request("get", query=query, entity=entity, orderby=orderby)
         yield from get_items(start_request, 0)
 
     def put(self, dry=False):
@@ -404,6 +419,5 @@ class Client:
             query = "name eq '{}'".format(name)
 
         return next(self.get_things(query, entity))
-
 
 # ============= EOF =============================================
