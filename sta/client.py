@@ -42,7 +42,7 @@ class BaseST:
                 f"Validation failed for {self.__class__.__name__}. {err}. {self._payload}"
             )
 
-    def _generate_request(self, method, query=None, entity=None, orderby=None):
+    def _generate_request(self, method, query=None, entity=None, orderby=None, expand=None, limit=None):
         if orderby is None:
             orderby = "$orderby=id asc"
 
@@ -66,6 +66,8 @@ class BaseST:
 
             if params:
                 url = f"{url}?{'&'.join(params)}"
+            if expand:
+                url = f"{url}&$expand={expand}"
 
         return {"method": method, "url": url}
 
@@ -101,7 +103,7 @@ class BaseST:
             if resp.status_code == 200:
                 return True
 
-    def get(self, query, entity=None, pages=None):
+    def get(self, query, entity=None, pages=None, expand=None):
         orderby = None
         if pages < 0:
             pages = abs(pages)
@@ -124,9 +126,7 @@ class BaseST:
 
             yield from get_items({"method": "get", "url": next_url}, page_count + 1)
 
-        start_request = self._generate_request(
-            "get", query=query, entity=entity, orderby=orderby
-        )
+        start_request = self._generate_request("get", query=query, entity=entity, orderby=orderby, expand=expand)
         yield from get_items(start_request, 0)
 
     def put(self, dry=False):
@@ -402,9 +402,9 @@ class Client:
     def get_datastreams(self, query=None):
         yield from Datastreams(None, self._session, self._connection).get(query)
 
-    def get_locations(self, query=None, pages=None):
+    def get_locations(self, query=None, pages=None, expand=None):
         yield from Locations(None, self._session, self._connection).get(
-            query, pages=pages
+            query, pages=pages, expand=expand
         )
 
     def get_things(self, query=None, entity=None):

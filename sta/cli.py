@@ -67,15 +67,12 @@ def things(name, agency, verbose, out):
     "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
     "descending sorting",
 )
+@click.option("--expand")
 @click.option("--verbose", default=False)
-@click.option(
-    "--out",
-    default="out.json",
-    help="Location to save file. use file extension to define output type. "
-    "valid extensions are .shp, .csv, and .json. JSON output is used by "
-    "default",
-)
-def locations(name, agency, query, pages, verbose, out):
+@click.option("--out", default='out.json', help='Location to save file. use file extension to define output type. '
+                                                'valid extensions are .shp, .csv, and .json. JSON output is used by '
+                                                'default')
+def locations(name, agency, query, pages, expand, verbose, out):
     client = Client()
 
     filterargs = []
@@ -95,7 +92,9 @@ def locations(name, agency, query, pages, verbose, out):
     if out == "out.json":
         out = "out.locations.json"
 
-    woutput(out, client.get_locations(query=query, pages=pages), query, client.base_url)
+    woutput(
+        out, client.get_locations(query=query, pages=pages, expand=expand), query, client.base_url
+    )
 
 
 def woutput(out, *args, **kw):
