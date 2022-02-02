@@ -14,7 +14,7 @@
 # limitations under the License.
 # ===============================================================================
 import os.path
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlencode
 
 import yaml
 from requests import Session
@@ -64,7 +64,9 @@ class BaseST:
                 params.append(orderby)
 
             if query:
-                params.append(f"$filter={quote_plus(query)}")
+                # params.append(urlencode({"$filter": query}))
+
+                params.append(f"$filter={query}")
 
             if params:
                 url = f"{url}?{'&'.join(params)}"

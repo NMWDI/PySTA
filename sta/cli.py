@@ -15,9 +15,14 @@
 # ===============================================================================
 import csv
 import json
+import os
+
+import requests
 import shapefile
 import click
-
+import shapely.wkt
+from shapely.geometry import shape
+from shapely.geometry.polygon import Polygon
 from sta.client import Client
 
 
@@ -64,19 +69,23 @@ def things(name, agency, verbose, out):
     "--pages",
     default=1,
     help="Number of pages of results to return. Each page is 1000 records by "
-    "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
-    "descending sorting",
+         "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
+         "descending sorting",
 )
 @click.option("--expand")
+@click.option("--within")
+@click.option("--bbox")
 @click.option("--verbose", default=False)
 @click.option(
     "--out",
     default="out.json",
     help="Location to save file. use file extension to define output type. "
-    "valid extensions are .shp, .csv, and .json. JSON output is used by "
-    "default",
+         "valid extensions are .shp, .csv, and .json. JSON output is used by "
+         "default",
 )
-def locations(name, agency, query, pages, expand, verbose, out):
+def locations(name, agency, query, pages, expand,
+              within, bbox,
+              verbose, out):
     client = Client()
 
     filterargs = []
@@ -88,6 +97,35 @@ def locations(name, agency, query, pages, expand, verbose, out):
 
     if query:
         filterargs.append(query)
+
+    if bbox:
+        # upper left, lower right
+        pts = [[float(vi) for vi in pt.strip().split(' ')] for pt in bbox.split(',')]
+        bbox = Polygon([(pts[a][0], pts[b][1]) for a, b in [(0, 0), (1, 0), (1, 1), (0, 1)]])
+        filterargs.append(f"st_within(location, geography'{bbox}')")
+    elif within:
+        if os.path.isfile(within):
+            # try to read in file
+            if within.endswith('.geojson'):
+                pass
+            elif within.endswith('.shp'):
+                pass
+        else:
+            # load a raw WKT object
+            try:
+                wkt = shapely.wkt.loads(within)
+            except:
+                # maybe its a name of a county
+                wkt = get_county_polygon(within)
+                if wkt is None:
+                    # not a WKT object probably a sequence of points that should
+                    # be interpreted as a polygon
+                    try:
+                        wkt = Polygon(within.split(',')).wkt
+                    except:
+                        print(f'invalid within argument "{within}"')
+        if wkt:
+            filterargs.append(f"st_within(location, geography'{wkt}')")
 
     query = " and ".join(filterargs)
     if verbose:
@@ -102,6 +140,27 @@ def locations(name, agency, query, pages, expand, verbose, out):
         query,
         client.base_url,
     )
+
+def statelookup(name):
+    return {'NM': 35}[name]
+
+
+def get_county_polygon(name):
+    if ':' in name:
+        state, county = name.split(':')
+    else:
+        state = 'NM'
+        county = name
+
+    state = statelookup(state)
+
+    url = f'https://reference.geoconnex.us/collections/counties/items?STATEFP={state}&f=json'
+    resp = requests.get(url)
+
+    obj = resp.json()
+    for f in obj['features']:
+        if f['properties']['NAME'] == county:
+            return Polygon(f['geometry']['coordinates'][0][0]).wkt
 
 
 def woutput(out, *args, **kw):
