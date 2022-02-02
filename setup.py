@@ -31,7 +31,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
-    install_requires=["Click", "paho-mqtt", "pyproj", "requests", "jsonschema"],
+    install_requires=["Click", "paho-mqtt", "pyproj", "requests", "jsonschema", "pyodata", "pyyaml"],
     entry_points={
         "console_scripts": [
             "sta = sta.cli:cli",

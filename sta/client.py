@@ -13,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ===============================================================================
+import os.path
 from urllib.parse import quote_plus
 
+import yaml
 from requests import Session
 from jsonschema import validate, ValidationError
 import re
@@ -304,9 +306,28 @@ class Datastreams(BaseST):
 
 
 class Client:
-    def __init__(self, base_url, user, pwd):
+    def __init__(self, base_url=None, user=None, pwd=None):
         self._connection = {"base_url": base_url, "user": user, "pwd": pwd}
+        if not base_url:
+            p = os.path.join(os.path.expanduser('~'), '.sta.yaml')
+            if os.path.isfile(p):
+                with open(p, 'r') as rfile:
+                    obj = yaml.load(rfile, Loader=yaml.SafeLoader)
+                    self._connection.update(**obj)
+
+        if not self._connection['base_url']:
+            base_url = input('Please enter a base url for a SensorThings instance>> ')
+            if base_url.endswith('/'):
+                base_url = base_url[:-1]
+            self._connection['base_url'] = base_url
+            with open(p, 'w') as wfile:
+                yaml.dump(self._connection, wfile)
+
         self._session = Session()
+
+    @property
+    def base_url(self):
+        return self._connection['base_url']
 
     def put_sensor(self, payload, dry=False):
         sensor = Sensors(payload, self._session, self._connection)
@@ -369,6 +390,5 @@ class Client:
             query = "name eq '{}'".format(name)
 
         return next(self.get_things(query, entity))
-
 
 # ============= EOF =============================================
