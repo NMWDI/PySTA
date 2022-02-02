@@ -40,7 +40,7 @@ setup(
         "pyodata",
         "pyyaml",
         "pyshp",
-        "shapely"
+        "shapely",
     ],
     entry_points={
         "console_scripts": [

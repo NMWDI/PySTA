@@ -69,8 +69,8 @@ def things(name, agency, verbose, out):
     "--pages",
     default=1,
     help="Number of pages of results to return. Each page is 1000 records by "
-         "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
-         "descending sorting",
+    "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
+    "descending sorting",
 )
 @click.option("--expand")
 @click.option("--within")
@@ -80,12 +80,10 @@ def things(name, agency, verbose, out):
     "--out",
     default="out.json",
     help="Location to save file. use file extension to define output type. "
-         "valid extensions are .shp, .csv, and .json. JSON output is used by "
-         "default",
+    "valid extensions are .shp, .csv, and .json. JSON output is used by "
+    "default",
 )
-def locations(name, agency, query, pages, expand,
-              within, bbox,
-              verbose, out):
+def locations(name, agency, query, pages, expand, within, bbox, verbose, out):
     client = Client()
 
     filterargs = []
@@ -100,15 +98,17 @@ def locations(name, agency, query, pages, expand,
 
     if bbox:
         # upper left, lower right
-        pts = [[float(vi) for vi in pt.strip().split(' ')] for pt in bbox.split(',')]
-        bbox = Polygon([(pts[a][0], pts[b][1]) for a, b in [(0, 0), (1, 0), (1, 1), (0, 1)]])
+        pts = [[float(vi) for vi in pt.strip().split(" ")] for pt in bbox.split(",")]
+        bbox = Polygon(
+            [(pts[a][0], pts[b][1]) for a, b in [(0, 0), (1, 0), (1, 1), (0, 1)]]
+        )
         filterargs.append(f"st_within(location, geography'{bbox}')")
     elif within:
         if os.path.isfile(within):
             # try to read in file
-            if within.endswith('.geojson'):
+            if within.endswith(".geojson"):
                 pass
-            elif within.endswith('.shp'):
+            elif within.endswith(".shp"):
                 pass
         else:
             # load a raw WKT object
@@ -121,7 +121,7 @@ def locations(name, agency, query, pages, expand,
                     # not a WKT object probably a sequence of points that should
                     # be interpreted as a polygon
                     try:
-                        wkt = Polygon(within.split(',')).wkt
+                        wkt = Polygon(within.split(",")).wkt
                     except:
                         print(f'invalid within argument "{within}"')
         if wkt:
@@ -141,26 +141,27 @@ def locations(name, agency, query, pages, expand,
         client.base_url,
     )
 
+
 def statelookup(name):
-    return {'NM': 35}[name]
+    return {"NM": 35}[name]
 
 
 def get_county_polygon(name):
-    if ':' in name:
-        state, county = name.split(':')
+    if ":" in name:
+        state, county = name.split(":")
     else:
-        state = 'NM'
+        state = "NM"
         county = name
 
     state = statelookup(state)
 
-    url = f'https://reference.geoconnex.us/collections/counties/items?STATEFP={state}&f=json'
+    url = f"https://reference.geoconnex.us/collections/counties/items?STATEFP={state}&f=json"
     resp = requests.get(url)
 
     obj = resp.json()
-    for f in obj['features']:
-        if f['properties']['NAME'] == county:
-            return Polygon(f['geometry']['coordinates'][0][0]).wkt
+    for f in obj["features"]:
+        if f["properties"]["NAME"] == county:
+            return Polygon(f["geometry"]["coordinates"][0][0]).wkt
 
 
 def woutput(out, *args, **kw):
