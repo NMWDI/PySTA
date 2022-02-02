@@ -20,3 +20,32 @@ PySTA can easily be installed via [PyPI.org](https://pypi.org/project/pysta/)
 pip install pysta 
 ```
 
+## How to Use
+
+Get all the locations for agency NMBGMR and output as a json file to `out.locations.json`
+```
+sta locations --agency NMBGMR
+```
+
+Specify an output name
+```
+sta locations --agency NMBGMR --out mylocations.json
+```
+
+Output as csv
+
+```
+sta locations --agency NMBGMR --out mylocations.csv
+```
+
+Output as ShapeFile
+```
+sta locations --agency NMBGMR --out mylocations.shp
+```
+
+
+
+Get help
+```shell
+sta locations --help
+```
