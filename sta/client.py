@@ -42,7 +42,9 @@ class BaseST:
                 f"Validation failed for {self.__class__.__name__}. {err}. {self._payload}"
             )
 
-    def _generate_request(self, method, query=None, entity=None, orderby=None, expand=None, limit=None):
+    def _generate_request(
+        self, method, query=None, entity=None, orderby=None, expand=None, limit=None
+    ):
         if orderby is None:
             orderby = "$orderby=id asc"
 
@@ -126,7 +128,9 @@ class BaseST:
 
             yield from get_items({"method": "get", "url": next_url}, page_count + 1)
 
-        start_request = self._generate_request("get", query=query, entity=entity, orderby=orderby, expand=expand)
+        start_request = self._generate_request(
+            "get", query=query, entity=entity, orderby=orderby, expand=expand
+        )
         yield from get_items(start_request, 0)
 
     def put(self, dry=False):

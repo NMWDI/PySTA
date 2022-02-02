@@ -69,9 +69,13 @@ def things(name, agency, verbose, out):
 )
 @click.option("--expand")
 @click.option("--verbose", default=False)
-@click.option("--out", default='out.json', help='Location to save file. use file extension to define output type. '
-                                                'valid extensions are .shp, .csv, and .json. JSON output is used by '
-                                                'default')
+@click.option(
+    "--out",
+    default="out.json",
+    help="Location to save file. use file extension to define output type. "
+    "valid extensions are .shp, .csv, and .json. JSON output is used by "
+    "default",
+)
 def locations(name, agency, query, pages, expand, verbose, out):
     client = Client()
 
@@ -93,7 +97,10 @@ def locations(name, agency, query, pages, expand, verbose, out):
         out = "out.locations.json"
 
     woutput(
-        out, client.get_locations(query=query, pages=pages, expand=expand), query, client.base_url
+        out,
+        client.get_locations(query=query, pages=pages, expand=expand),
+        query,
+        client.base_url,
     )
 
 
