@@ -143,22 +143,22 @@ def locations(name, agency, query, pages, expand, within, bbox, verbose, out):
 
 
 def statelookup(shortname):
-    p = os.path.join(os.path.expanduser('~'), '.sta.states.json')
+    p = os.path.join(os.path.expanduser("~"), ".sta.states.json")
     if not os.path.isfile(p):
-        click.secho(f'Caching states to {p}')
-        url = f'https://reference.geoconnex.us/collections/states/items?f=json'
+        click.secho(f"Caching states to {p}")
+        url = f"https://reference.geoconnex.us/collections/states/items?f=json"
         resp = requests.get(url)
-        with open(p, 'w') as wfile:
+        with open(p, "w") as wfile:
             json.dump(resp.json(), wfile)
 
-    with open(p, 'r') as rfile:
+    with open(p, "r") as rfile:
         obj = json.load(rfile)
 
     shortname = shortname.lower()
-    for f in obj['features']:
-        props = f['properties']
-        if props['STUSPS'].lower() == shortname:
-            return props['STATEFP']
+    for f in obj["features"]:
+        props = f["properties"]
+        if props["STUSPS"].lower() == shortname:
+            return props["STATEFP"]
 
 
 def get_county_polygon(name):
@@ -170,31 +170,31 @@ def get_county_polygon(name):
 
     statefp = statelookup(state)
     if statefp:
-        p = os.path.join(os.path.expanduser('~'), f'.sta.{state}.counties.json')
+        p = os.path.join(os.path.expanduser("~"), f".sta.{state}.counties.json")
         if not os.path.isfile(p):
-            click.secho(f'Caching {state} counties to {p}')
-            url = f'https://reference.geoconnex.us/collections/counties/items?STATEFP={statefp}&f=json'
+            click.secho(f"Caching {state} counties to {p}")
+            url = f"https://reference.geoconnex.us/collections/counties/items?STATEFP={statefp}&f=json"
             resp = requests.get(url)
 
             obj = resp.json()
-            with open(p, 'w') as wfile:
+            with open(p, "w") as wfile:
                 json.dump(obj, wfile)
 
-        with open(p, 'r') as rfile:
+        with open(p, "r") as rfile:
             obj = json.load(rfile)
 
         county = county.lower()
-        for f in obj['features']:
-            if f['properties']['NAME'].lower() == county:
-                return Polygon(f['geometry']['coordinates'][0][0]).wkt
+        for f in obj["features"]:
+            if f["properties"]["NAME"].lower() == county:
+                return Polygon(f["geometry"]["coordinates"][0][0]).wkt
         else:
-            print(f'county {county} does not exist')
-            print('---------- Valid county names -------------')
-            for f in obj['features']:
-                print(f['properties']['NAME'])
-            print('--------------------------------------------')
+            print(f"county {county} does not exist")
+            print("---------- Valid county names -------------")
+            for f in obj["features"]:
+                print(f["properties"]["NAME"])
+            print("--------------------------------------------")
     else:
-        click.secho(f'Invalid state. {state}')
+        click.secho(f"Invalid state. {state}")
 
 
 def woutput(out, *args, **kw):
