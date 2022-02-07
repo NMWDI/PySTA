@@ -14,14 +14,22 @@
 # limitations under the License.
 # ===============================================================================
 import os.path
-from urllib.parse import quote_plus, urlencode
 
+import click
 import yaml
 from requests import Session
 from jsonschema import validate, ValidationError
 import re
 
 IDREGEX = re.compile(r"(?P<id>\(\d+\))")
+
+
+def verbose_message(msg):
+    click.secho(msg, fg='green')
+
+
+def warning(msg):
+    click.secho(msg, fg='red')
 
 
 class BaseST:
@@ -43,7 +51,7 @@ class BaseST:
             )
 
     def _generate_request(
-        self, method, query=None, entity=None, orderby=None, expand=None, limit=None
+            self, method, query=None, entity=None, orderby=None, expand=None, limit=None
     ):
         if orderby is None:
             orderby = "$orderby=id asc"
@@ -107,7 +115,7 @@ class BaseST:
             if resp.status_code == 200:
                 return True
 
-    def get(self, query, entity=None, pages=None, expand=None):
+    def get(self, query, entity=None, pages=None, expand=None, verbose=False):
         orderby = None
         if pages < 0:
             pages = abs(pages)
@@ -117,16 +125,24 @@ class BaseST:
             if pages:
                 if page_count >= pages:
                     return
-                print(f"getting page={page_count + 1}/{pages} for request={request}")
+                if verbose:
+                    verbose_message(f"getting page={page_count + 1}/{pages}")
+                    verbose_message('-------------- Request -----------------')
+                    verbose_message(request['url'])
+                    verbose_message('----------------------------------------')
 
             resp = self._send_request(request)
             resp = self._parse_response(request, resp)
-            for v in resp["value"]:
-                yield v
-            try:
-                next_url = resp["@iot.nextLink"]
-            except KeyError:
+            if not resp["value"]:
+                warning("no records found")
                 return
+            else:
+                for v in resp["value"]:
+                    yield v
+                try:
+                    next_url = resp["@iot.nextLink"]
+                except KeyError:
+                    return
 
             yield from get_items({"method": "get", "url": next_url}, page_count + 1)
 
@@ -408,9 +424,9 @@ class Client:
     def get_datastreams(self, query=None):
         yield from Datastreams(None, self._session, self._connection).get(query)
 
-    def get_locations(self, query=None, pages=None, expand=None):
+    def get_locations(self, query=None, **kw):
         yield from Locations(None, self._session, self._connection).get(
-            query, pages=pages, expand=expand
+            query, **kw
         )
 
     def get_things(self, query=None, entity=None):
@@ -427,6 +443,5 @@ class Client:
             query = "name eq '{}'".format(name)
 
         return next(self.get_things(query, entity))
-
 
 # ============= EOF =============================================
