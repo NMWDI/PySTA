@@ -47,6 +47,11 @@ MG_PER_L = {
     "definition": "http://www.qudt.org/vocab/unit/MilliGM-PER-L",
 }
 
+GPM = {"name": "Gallon per Minute",
+       "symbol": "gpm",
+       "definition": "http://qudt.org/vocab/unit/GAL_US-PER-MIN",
+       }
+
 NPDES_PERMIT = {"name": "NPDES Permit", "symbol": "p", "definition": "http://npdes.gov"}
 
 OM_CategoryObservation = (
