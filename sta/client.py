@@ -25,11 +25,11 @@ IDREGEX = re.compile(r"(?P<id>\(\d+\))")
 
 
 def verbose_message(msg):
-    click.secho(msg, fg='green')
+    click.secho(msg, fg="green")
 
 
 def warning(msg):
-    click.secho(msg, fg='red')
+    click.secho(msg, fg="red")
 
 
 class BaseST:
@@ -51,7 +51,7 @@ class BaseST:
             )
 
     def _generate_request(
-            self, method, query=None, entity=None, orderby=None, expand=None, limit=None
+        self, method, query=None, entity=None, orderby=None, expand=None, limit=None
     ):
         if orderby is None:
             orderby = "$orderby=id asc"
@@ -127,9 +127,9 @@ class BaseST:
                     return
                 if verbose:
                     verbose_message(f"getting page={page_count + 1}/{pages}")
-                    verbose_message('-------------- Request -----------------')
-                    verbose_message(request['url'])
-                    verbose_message('----------------------------------------')
+                    verbose_message("-------------- Request -----------------")
+                    verbose_message(request["url"])
+                    verbose_message("----------------------------------------")
 
             resp = self._send_request(request)
             resp = self._parse_response(request, resp)
@@ -425,9 +425,7 @@ class Client:
         yield from Datastreams(None, self._session, self._connection).get(query)
 
     def get_locations(self, query=None, **kw):
-        yield from Locations(None, self._session, self._connection).get(
-            query, **kw
-        )
+        yield from Locations(None, self._session, self._connection).get(query, **kw)
 
     def get_things(self, query=None, entity=None):
         yield from Things(None, self._session, self._connection).get(query, entity)
@@ -443,5 +441,6 @@ class Client:
             query = "name eq '{}'".format(name)
 
         return next(self.get_things(query, entity))
+
 
 # ============= EOF =============================================

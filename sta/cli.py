@@ -70,22 +70,24 @@ def things(name, agency, verbose, out):
     "--pages",
     default=1,
     help="Number of pages of results to return. Each page is 1000 records by "
-         "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
-         "descending sorting",
+    "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
+    "descending sorting",
 )
 @click.option("--expand")
 @click.option("--within")
 @click.option("--bbox")
 @click.option("--screen", is_flag=True)
 @click.option("--verbose", is_flag=True)
-@click.option("--out",
-              help="Location to save file. use file extension to define output type. "
-                   "valid extensions are .shp, .csv, and .json. JSON output is used by "
-                   "default",
-              )
+@click.option(
+    "--out",
+    help="Location to save file. use file extension to define output type. "
+    "valid extensions are .shp, .csv, and .json. JSON output is used by "
+    "default",
+)
 @click.option("--url", default=None)
-def locations(name, agency, query, pages, expand, within, bbox,
-              screen, verbose, out, url):
+def locations(
+    name, agency, query, pages, expand, within, bbox, screen, verbose, out, url
+):
     client = Client(base_url=url)
 
     filterargs = []
@@ -142,7 +144,6 @@ def locations(name, agency, query, pages, expand, within, bbox,
         client.get_locations(query=query, pages=pages, expand=expand, verbose=verbose),
         query,
         client.base_url,
-
     )
 
 
@@ -188,33 +189,33 @@ def get_county_polygon(name):
             obj = json.load(rfile)
 
         county = county.lower()
-        for f in obj['features']:
-            if f['properties']['NAME'].lower() == county:
-                return Polygon(f['geometry']['coordinates'][0][0]).wkt
+        for f in obj["features"]:
+            if f["properties"]["NAME"].lower() == county:
+                return Polygon(f["geometry"]["coordinates"][0][0]).wkt
         else:
             warning(f"county '{county}' does not exist")
-            warning('---------- Valid county names -------------')
-            for f in obj['features']:
-                warning(f['properties']['NAME'])
-            warning('--------------------------------------------')
+            warning("---------- Valid county names -------------")
+            for f in obj["features"]:
+                warning(f["properties"]["NAME"])
+            warning("--------------------------------------------")
     else:
-        warning(f'Invalid state. {state}')
+        warning(f"Invalid state. {state}")
 
 
 def warning(msg):
-    click.secho(msg, fg='red')
+    click.secho(msg, fg="red")
 
 
 def woutput(screen, out, records_generator, *args, **kw):
     if not screen and not out:
-        out = 'out.json'
+        out = "out.json"
 
     if screen and out:
         records_generator = list(records_generator)
 
     if screen:
         for i, r in enumerate(records_generator):
-            click.secho(f'{i + 1}, {pprint.pformat(r)}', fg='green')
+            click.secho(f"{i + 1}, {pprint.pformat(r)}", fg="green")
 
     if out:
         if out.endswith(".shp"):
@@ -225,7 +226,7 @@ def woutput(screen, out, records_generator, *args, **kw):
             func = json_output
 
         nrecords = func(out, records_generator, *args, **kw)
-        click.secho(f"wrote nrecords={nrecords} to {out}", fg='yellow')
+        click.secho(f"wrote nrecords={nrecords} to {out}", fg="yellow")
         return nrecords
 
 
