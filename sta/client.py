@@ -368,8 +368,8 @@ class Observations(BaseST):
                 "type": "object",
                 "required": ["@iot.id"],
                 "properties": {"@iot.id": {"type": "number"}},
-            }
-        }
+            },
+        },
     }
 
 
@@ -468,10 +468,11 @@ class Client:
 
         entity = None
         if thing:
-            entity = f'Things/({thing})'
+            entity = f"Things/({thing})"
         if name is not None:
             query = f"name eq '{name}'"
 
         return next(self.get_datastreams(query, entity))
+
 
 # ============= EOF =============================================

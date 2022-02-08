@@ -71,8 +71,8 @@ def things(name, agency, verbose, out):
     "--pages",
     default=1,
     help="Number of pages of results to return. Each page is 1000 records by "
-         "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
-         "descending sorting",
+    "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
+    "descending sorting",
 )
 @click.option("--expand")
 @click.option("--within")
@@ -82,15 +82,13 @@ def things(name, agency, verbose, out):
 @click.option(
     "--out",
     help="Location to save file. use file extension to define output type. "
-         "valid extensions are .shp, .csv, and .json. JSON output is used by "
-         "default",
+    "valid extensions are .shp, .csv, and .json. JSON output is used by "
+    "default",
 )
 @click.option("--url", default=None)
 @click.option("--group", default=None)
 def locations(
-        name, agency, query, pages, expand, within, bbox, screen, verbose, out, url,
-        group
-
+    name, agency, query, pages, expand, within, bbox, screen, verbose, out, url, group
 ):
     client = Client(base_url=url)
 
@@ -148,8 +146,7 @@ def locations(
         client.get_locations(query=query, pages=pages, expand=expand, verbose=verbose),
         query,
         client.base_url,
-        group=group
-
+        group=group,
     )
 
 
@@ -221,7 +218,7 @@ def woutput(screen, out, records_generator, *args, **kw):
 
     if screen:
         for i, r in enumerate(records_generator):
-            click.secho(f"{i + 1} -------------------", fg='yellow')
+            click.secho(f"{i + 1} -------------------", fg="yellow")
             click.secho(f"{pprint.pformat(r)}\n", fg="green")
 
     if out:
@@ -240,27 +237,28 @@ def woutput(screen, out, records_generator, *args, **kw):
 def shp_output(out, records_generator, query, base_url, group=False, **kw):
     nrecords = 0
     if group:
+
         def key(r):
-            return r['properties']['agency']
+            return r["properties"]["agency"]
 
         records = list(records_generator)
         for agency, records in groupby(sorted(records, key=key), key=key):
             flag = False
             outt, ext = os.path.splitext(out)
-            outt = f'{outt}-{agency}{ext}'
+            outt = f"{outt}-{agency}{ext}"
             with shapefile.Writer(outt) as w:
-                w.field("name", 'C')
+                w.field("name", "C")
                 for row in records:
-                    properties = row['properties']
+                    properties = row["properties"]
                     if not flag:
                         for k, v in properties.items():
-                            w.field(k, 'C')
+                            w.field(k, "C")
                         flag = True
 
                     geom = row["location"]
                     coords = geom["coordinates"]
                     w.point(*coords)
-                    properties['name'] = row['name']
+                    properties["name"] = row["name"]
                     w.record(**properties)
                     nrecords += 1
 
@@ -270,7 +268,7 @@ def shp_output(out, records_generator, query, base_url, group=False, **kw):
             w.field("agency", "C")
 
             for row in records_generator:
-                properties = row['properties']
+                properties = row["properties"]
 
                 geom = row["location"]
                 coords = geom["coordinates"]
