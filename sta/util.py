@@ -17,7 +17,7 @@ from datetime import datetime
 
 
 def statime(ts):
-    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S"):
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S",'%m/%d/%Y %I:%M:%S %p'):
         try:
             t = datetime.strptime(ts, fmt)
             return f"{t.isoformat()}.000Z"

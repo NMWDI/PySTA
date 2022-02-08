@@ -53,7 +53,7 @@ class BaseST:
     def _generate_request(
         self, method, query=None, entity=None, orderby=None, expand=None, limit=None
     ):
-        if orderby is None:
+        if orderby is None and method=='get':
             orderby = "$orderby=id asc"
 
         base_url = self._connection["base_url"]
@@ -111,13 +111,16 @@ class BaseST:
                     iotid = m.group("id")[1:-1]
                     self.iotid = iotid
                     return True
+            else:
+                print(resp.status_code, resp.text)
+
         elif request["method"] == "patch":
             if resp.status_code == 200:
                 return True
 
     def get(self, query, entity=None, pages=None, expand=None, verbose=False):
         orderby = None
-        if pages < 0:
+        if pages and pages < 0:
             pages = abs(pages)
             orderby = "$orderby=id desc"
 
@@ -125,11 +128,12 @@ class BaseST:
             if pages:
                 if page_count >= pages:
                     return
-                if verbose:
-                    verbose_message(f"getting page={page_count + 1}/{pages}")
-                    verbose_message("-------------- Request -----------------")
-                    verbose_message(request["url"])
-                    verbose_message("----------------------------------------")
+
+            if verbose:
+                verbose_message(f"getting page={page_count + 1}/{pages}")
+                verbose_message("-------------- Request -----------------")
+                verbose_message(request["url"])
+                verbose_message("----------------------------------------")
 
             resp = self._send_request(request)
             resp = self._parse_response(request, resp)
@@ -157,6 +161,7 @@ class BaseST:
                 return self.patch()
             else:
                 request = self._generate_request("post")
+                print(request)
                 resp = self._send_request(request, json=self._payload, dry=dry)
 
                 return self._parse_response(request, resp, dry=dry)
@@ -372,6 +377,46 @@ class Observations(BaseST):
         },
     }
 
+class ObservationsArray(BaseST):
+    _schema = {
+        "type": "object",
+        "required": ["observations", "Datastream", "components"],
+        "properties": {
+            "observations": {"type": "array"},
+            "components": {"type": "array"},
+            "Datastream": {
+                "type": "object",
+                "required": ["@iot.id"],
+                "properties": {"@iot.id": {"type": "number"}},
+            },
+        },
+    }
+
+
+    def put(self, dry=False):
+        if self._validate_payload():
+            obs = self._payload['observations']
+            n = 100
+            nobs = len(obs)
+            for i in range(0, nobs, n):
+                print('loading chunk {}/{}'.format(i, nobs))
+                chunk = obs[i:i+n]
+
+                pd = [{'Datastream': self._payload['Datastream'],
+                 'components': self._payload['components'],
+                 'dataArray': chunk
+                 }]
+                base_url = self._connection["base_url"]
+                if not base_url.startswith("http"):
+                    base_url = f"https://{base_url}/FROST-Server/v1.1"
+
+                url = f'{base_url}/CreateObservations'
+                request = {'method': 'post', 'url': url}
+                resp = self._send_request(request, json=pd, dry=dry)
+
+                self._parse_response(request, resp, dry=dry)
+
+
 
 class Client:
     def __init__(self, base_url=None, user=None, pwd=None):
@@ -422,6 +467,11 @@ class Client:
         thing.put(dry)
         return thing
 
+    def add_observations(self, payload, dry=False):
+        obs = ObservationsArray(payload, self._session, self._connection)
+        obs.put(dry)
+        return obs
+
     def add_observation(self, payload, dry=False):
         obs = Observations(payload, self._session, self._connection)
         obs.put(dry, check_exists=False)
@@ -443,8 +493,8 @@ class Client:
             query = f"name eq '{name}'"
         yield from ObservedProperties(None, self._session, self._connection).get(query)
 
-    def get_datastreams(self, query=None):
-        yield from Datastreams(None, self._session, self._connection).get(query)
+    def get_datastreams(self, query=None, entity=None):
+        yield from Datastreams(None, self._session, self._connection).get(query, entity)
 
     def get_locations(self, query=None, **kw):
         yield from Locations(None, self._session, self._connection).get(query, **kw)
@@ -452,7 +502,10 @@ class Client:
     def get_things(self, query=None, entity=None):
         yield from Things(None, self._session, self._connection).get(query, entity)
 
-    def get_location(self, query=None):
+    def get_location(self, query=None, name=None):
+        if name is not None:
+            query = f"name eq '{name}'"
+
         return next(self.get_locations(query))
 
     def get_thing(self, query=None, name=None, location=None):
@@ -468,7 +521,7 @@ class Client:
 
         entity = None
         if thing:
-            entity = f"Things/({thing})"
+            entity = f"Things({thing})/Datastreams"
         if name is not None:
             query = f"name eq '{name}'"
 
