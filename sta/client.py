@@ -53,7 +53,7 @@ class BaseST:
     def _generate_request(
         self, method, query=None, entity=None, orderby=None, expand=None, limit=None
     ):
-        if orderby is None and method=='get':
+        if orderby is None and method == "get":
             orderby = "$orderby=id asc"
 
         base_url = self._connection["base_url"]
@@ -377,6 +377,7 @@ class Observations(BaseST):
         },
     }
 
+
 class ObservationsArray(BaseST):
     _schema = {
         "type": "object",
@@ -392,30 +393,31 @@ class ObservationsArray(BaseST):
         },
     }
 
-
     def put(self, dry=False):
         if self._validate_payload():
-            obs = self._payload['observations']
+            obs = self._payload["observations"]
             n = 100
             nobs = len(obs)
             for i in range(0, nobs, n):
-                print('loading chunk {}/{}'.format(i, nobs))
-                chunk = obs[i:i+n]
+                print("loading chunk {}/{}".format(i, nobs))
+                chunk = obs[i : i + n]
 
-                pd = [{'Datastream': self._payload['Datastream'],
-                 'components': self._payload['components'],
-                 'dataArray': chunk
-                 }]
+                pd = [
+                    {
+                        "Datastream": self._payload["Datastream"],
+                        "components": self._payload["components"],
+                        "dataArray": chunk,
+                    }
+                ]
                 base_url = self._connection["base_url"]
                 if not base_url.startswith("http"):
                     base_url = f"https://{base_url}/FROST-Server/v1.1"
 
-                url = f'{base_url}/CreateObservations'
-                request = {'method': 'post', 'url': url}
+                url = f"{base_url}/CreateObservations"
+                request = {"method": "post", "url": url}
                 resp = self._send_request(request, json=pd, dry=dry)
 
                 self._parse_response(request, resp, dry=dry)
-
 
 
 class Client:
