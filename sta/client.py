@@ -151,9 +151,9 @@ class BaseST:
         )
         yield from get_items(start_request, 0)
 
-    def put(self, dry=False):
+    def put(self, dry=False, check_exists=True):
         if self._validate_payload():
-            if self.exists():
+            if check_exists and self.exists():
                 return self.patch()
             else:
                 request = self._generate_request("post")
@@ -356,6 +356,23 @@ class Datastreams(BaseST):
             return True
 
 
+class Observations(BaseST):
+    _schema = {
+        "type": "object",
+        "required": ["phenomenonTime", "result", "resultTime", "Datastream"],
+        "properties": {
+            "phenomenonTime": {"type": "string"},
+            "result": {"type": "number"},
+            "resultTime": {"type": "string"},
+            "Datastream": {
+                "type": "object",
+                "required": ["@iot.id"],
+                "properties": {"@iot.id": {"type": "number"}},
+            }
+        }
+    }
+
+
 class Client:
     def __init__(self, base_url=None, user=None, pwd=None):
         self._connection = {"base_url": base_url, "user": user, "pwd": pwd}
@@ -405,6 +422,11 @@ class Client:
         thing.put(dry)
         return thing
 
+    def add_observation(self, payload, dry=False):
+        obs = Observations(payload, self._session, self._connection)
+        obs.put(dry, check_exists=False)
+        return obs
+
     def patch_location(self, iotid, payload, dry=False):
         location = Locations(payload, self._session, self._connection)
         location.patch(dry)
@@ -438,9 +460,18 @@ class Client:
         if location:
             entity = "Locations({})/Things".format(location)
         if name is not None:
-            query = "name eq '{}'".format(name)
+            query = f"name eq '{name}'"
 
         return next(self.get_things(query, entity))
 
+    def get_datastream(self, query=None, name=None, thing=None):
+
+        entity = None
+        if thing:
+            entity = f'Things/({thing})'
+        if name is not None:
+            query = f"name eq '{name}'"
+
+        return next(self.get_datastreams(query, entity))
 
 # ============= EOF =============================================
