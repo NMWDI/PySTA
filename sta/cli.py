@@ -36,28 +36,41 @@ class ObsContainer:
         self.obs = obs
 
     def header(self):
-        return 'location_name', 'location_id', \
-               'thing_name', 'thing_id', \
-               'datastream_name', 'datastream_id', \
-               'phenomenonTime', 'resultTime', 'result'
+        return (
+            "location_name",
+            "location_id",
+            "thing_name",
+            "thing_id",
+            "datastream_name",
+            "datastream_id",
+            "phenomenonTime",
+            "resultTime",
+            "result",
+        )
 
     def torow(self):
-        return [[self.location['name'],
-                 self.location['@iot.id'],
-                 self.thing['name'],
-                 self.thing['@iot.id'],
-                 self.datastream['name'],
-                 self.datastream['@iot.id'],
-                 o['phenomenonTime'],
-                 o['resultTime'],
-                 o['result'],
-                 ] for o in self.obs]
+        return [
+            [
+                self.location["name"],
+                self.location["@iot.id"],
+                self.thing["name"],
+                self.thing["@iot.id"],
+                self.datastream["name"],
+                self.datastream["@iot.id"],
+                o["phenomenonTime"],
+                o["resultTime"],
+                o["result"],
+            ]
+            for o in self.obs
+        ]
 
     def tojson(self):
-        return {'location': self.location,
-                'datastream': self.datastream,
-                'thing': self.thing,
-                'observations': self.obs}
+        return {
+            "location": self.location,
+            "datastream": self.datastream,
+            "thing": self.thing,
+            "observations": self.obs,
+        }
 
 
 @click.group()
@@ -71,25 +84,25 @@ def water():
 
 
 @water.command()
-@click.option('--location')
-@click.option('--agency')
-@click.option('--within')
-@click.option('--out', default=None)
-@click.option('--screen', is_flag=True)
-@click.option('--verbose', is_flag=True)
+@click.option("--location")
+@click.option("--agency")
+@click.option("--within")
+@click.option("--out", default=None)
+@click.option("--screen", is_flag=True)
+@click.option("--verbose", is_flag=True)
 def depths(location, agency, within, out, screen, verbose):
-    water_obs(location, agency, within, out, screen, verbose, 'Groundwater Levels')
+    water_obs(location, agency, within, out, screen, verbose, "Groundwater Levels")
 
 
 @water.command()
-@click.option('--location')
-@click.option('--agency')
-@click.option('--within')
-@click.option('--out', default=None)
-@click.option('--screen', is_flag=True)
-@click.option('--verbose', is_flag=True)
+@click.option("--location")
+@click.option("--agency")
+@click.option("--within")
+@click.option("--out", default=None)
+@click.option("--screen", is_flag=True)
+@click.option("--verbose", is_flag=True)
 def elevations(location, agency, within, out, screen, verbose):
-    water_obs(location, agency, within, out, screen, verbose, 'Groundwater Elevations')
+    water_obs(location, agency, within, out, screen, verbose, "Groundwater Elevations")
 
 
 def water_obs(location, agency, within, out, screen, verbose, dsname):
@@ -104,7 +117,7 @@ def water_obs(location, agency, within, out, screen, verbose, dsname):
 
     name, query = None, None
     if location:
-        if location.endswith('*'):
+        if location.endswith("*"):
             filter_args.append(f"startswith(name, '{location[:-1]}')")
         else:
             filter_args.append(f"name eq '{name}'")
@@ -113,7 +126,7 @@ def water_obs(location, agency, within, out, screen, verbose, dsname):
 
     def obs_generator():
         for loc in client.get_locations(query=query):
-            thing = client.get_thing(name='Water Well', location=loc)
+            thing = client.get_thing(name="Water Well", location=loc)
             ds = client.get_datastream(name=dsname, thing=thing)
 
             obss = list(client.get_observations(ds, verbose=verbose))
@@ -124,7 +137,10 @@ def water_obs(location, agency, within, out, screen, verbose, dsname):
             #     count += 1
             #     yield obs
 
-            click.secho(f"got observations {count} for location={loc['name']}, {loc['@iot.id']}", fg='green')
+            click.secho(
+                f"got observations {count} for location={loc['name']}, {loc['@iot.id']}",
+                fg="green",
+            )
 
     woutput(screen, out, obs_generator(), None, client.base_url)
 
@@ -167,8 +183,8 @@ def things(name, agency, verbose, out):
     "--pages",
     default=1,
     help="Number of pages of results to return. Each page is 1000 records by "
-         "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
-         "descending sorting",
+    "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
+    "descending sorting",
 )
 @click.option("--expand")
 @click.option("--within")
@@ -178,15 +194,26 @@ def things(name, agency, verbose, out):
 @click.option(
     "--out",
     help="Location to save file. use file extension to define output type. "
-         "valid extensions are .shp, .csv, and .json. JSON output is used by "
-         "default",
+    "valid extensions are .shp, .csv, and .json. JSON output is used by "
+    "default",
 )
 @click.option("--url", default=None)
 @click.option("--group", default=None)
 @click.option("--names-only", is_flag=True)
 def locations(
-        name, agency, query, pages, expand, within, bbox, screen, verbose, out, url, group,
-        names_only
+    name,
+    agency,
+    query,
+    pages,
+    expand,
+    within,
+    bbox,
+    screen,
+    verbose,
+    out,
+    url,
+    group,
+    names_only,
 ):
     client = Client(base_url=url)
 
@@ -226,7 +253,7 @@ def locations(
         query,
         client.base_url,
         group=group,
-        names_only=names_only
+        names_only=names_only,
     )
 
 
@@ -322,15 +349,15 @@ def woutput(screen, out, records_generator, *args, **kw):
     if not screen and not out:
         out = "out.json"
 
-    print('screen', screen, out)
+    print("screen", screen, out)
     if screen and out:
         records_generator = list(records_generator)
 
-    names_only = kw.get('names_only', False)
+    names_only = kw.get("names_only", False)
     if screen or names_only:
         for i, r in enumerate(records_generator):
             if names_only:
-                msg = r['name']
+                msg = r["name"]
             else:
                 msg = f"{pprint.pformat(r)}\n"
             click.secho(f"{i + 1} -------------------", fg="yellow")

@@ -51,7 +51,7 @@ class BaseST:
             )
 
     def _generate_request(
-            self, method, query=None, entity=None, orderby=None, expand=None, limit=None
+        self, method, query=None, entity=None, orderby=None, expand=None, limit=None
     ):
         if orderby is None and method == "get":
             orderby = "$orderby=id asc"
@@ -406,7 +406,7 @@ class ObservationsArray(BaseST):
             nobs = len(obs)
             for i in range(0, nobs, n):
                 print("loading chunk {}/{}".format(i, nobs))
-                chunk = obs[i: i + n]
+                chunk = obs[i : i + n]
 
                 pd = [
                     {
@@ -522,7 +522,7 @@ class Client:
         entity = None
         if location:
             if isinstance(location, dict):
-                location = location['@iot.id']
+                location = location["@iot.id"]
             entity = "Locations({})/Things".format(location)
         if name is not None:
             query = f"name eq '{name}'"
@@ -534,7 +534,7 @@ class Client:
         entity = None
         if thing:
             if isinstance(thing, dict):
-                thing = thing['@iot.id']
+                thing = thing["@iot.id"]
             entity = f"Things({thing})/Datastreams"
         if name is not None:
             query = f"name eq '{name}'"
@@ -543,8 +543,12 @@ class Client:
 
     def get_observations(self, datastream, **kw):
         if isinstance(datastream, dict):
-            datastream = datastream['@iot.id']
+            datastream = datastream["@iot.id"]
         entity = f"Datastreams({datastream})/Observations"
 
-        yield from Datastreams(None, self._session, self._connection).get(None, entity, **kw)
+        yield from Datastreams(None, self._session, self._connection).get(
+            None, entity, **kw
+        )
+
+
 # ============= EOF =============================================
