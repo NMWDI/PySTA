@@ -51,7 +51,7 @@ class BaseST:
             )
 
     def _generate_request(
-        self, method, query=None, entity=None, orderby=None, expand=None, limit=None
+            self, method, query=None, entity=None, orderby=None, expand=None, limit=None
     ):
         if orderby is None and method == "get":
             orderby = "$orderby=id asc"
@@ -166,12 +166,18 @@ class BaseST:
 
                 return self._parse_response(request, resp, dry=dry)
 
+    def getfirst(self, *args, **kw):
+        try:
+            return self.get(*args, **kw)
+        except StopIteration:
+            return
+
     def exists(self):
         name = self._payload["name"]
-        resp = self.get(f"name eq '{name}'")
+        resp = self.getfirst(f"name eq '{name}'")
         if resp:
             try:
-                self._db_obj = resp[0]
+                self._db_obj = resp
             except IndexError:
                 return
 
@@ -204,11 +210,11 @@ class Things(BaseST):
         name = self._payload["name"]
         location = self._payload["Locations"][0]
         lid = location["@iot.id"]
-        resp = self.get(f"name eq '{name}'", entity=f"Locations({lid})/Things")
+        resp = self.getfirst(f"name eq '{name}'", entity=f"Locations({lid})/Things")
 
         if resp:
             try:
-                self._db_obj = resp[0]
+                self._db_obj = resp
             except IndexError:
                 return
 
@@ -349,11 +355,11 @@ class Datastreams(BaseST):
         name = self._payload["name"]
         thing = self._payload["Thing"]
         lid = thing["@iot.id"]
-        resp = self.get(f"name eq '{name}'", entity=f"Things({lid})/Datastreams")
+        resp = self.getfirst(f"name eq '{name}'", entity=f"Things({lid})/Datastreams")
 
         if resp:
             try:
-                self._db_obj = resp[0]
+                self._db_obj = resp
             except IndexError:
                 return
 
@@ -400,7 +406,7 @@ class ObservationsArray(BaseST):
             nobs = len(obs)
             for i in range(0, nobs, n):
                 print("loading chunk {}/{}".format(i, nobs))
-                chunk = obs[i : i + n]
+                chunk = obs[i: i + n]
 
                 pd = [
                     {
@@ -507,12 +513,16 @@ class Client:
     def get_location(self, query=None, name=None):
         if name is not None:
             query = f"name eq '{name}'"
-
-        return next(self.get_locations(query))
+        try:
+            return next(self.get_locations(query))
+        except StopIteration:
+            pass
 
     def get_thing(self, query=None, name=None, location=None):
         entity = None
         if location:
+            if isinstance(location, dict):
+                location = location['@iot.id']
             entity = "Locations({})/Things".format(location)
         if name is not None:
             query = f"name eq '{name}'"
@@ -523,11 +533,18 @@ class Client:
 
         entity = None
         if thing:
+            if isinstance(thing, dict):
+                thing = thing['@iot.id']
             entity = f"Things({thing})/Datastreams"
         if name is not None:
             query = f"name eq '{name}'"
 
         return next(self.get_datastreams(query, entity))
 
+    def get_observations(self, datastream, **kw):
+        if isinstance(datastream, dict):
+            datastream = datastream['@iot.id']
+        entity = f"Datastreams({datastream})/Observations"
 
+        yield from Datastreams(None, self._session, self._connection).get(None, entity, **kw)
 # ============= EOF =============================================

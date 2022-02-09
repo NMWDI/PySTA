@@ -28,9 +28,105 @@ from shapely.geometry.polygon import Polygon
 from sta.client import Client
 
 
+class ObsContainer:
+    def __init__(self, location, thing, datastream, obs):
+        self.location = location
+        self.thing = thing
+        self.datastream = datastream
+        self.obs = obs
+
+    def header(self):
+        return 'location_name', 'location_id', \
+               'thing_name', 'thing_id', \
+               'datastream_name', 'datastream_id', \
+               'phenomenonTime', 'resultTime', 'result'
+
+    def torow(self):
+        return [[self.location['name'],
+                 self.location['@iot.id'],
+                 self.thing['name'],
+                 self.thing['@iot.id'],
+                 self.datastream['name'],
+                 self.datastream['@iot.id'],
+                 o['phenomenonTime'],
+                 o['resultTime'],
+                 o['result'],
+                 ] for o in self.obs]
+
+    def tojson(self):
+        return {'location': self.location,
+                'datastream': self.datastream,
+                'thing': self.thing,
+                'observations': self.obs}
+
+
 @click.group()
 def cli():
     pass
+
+
+@cli.group()
+def water():
+    pass
+
+
+@water.command()
+@click.option('--location')
+@click.option('--agency')
+@click.option('--within')
+@click.option('--out', default=None)
+@click.option('--screen', is_flag=True)
+@click.option('--verbose', is_flag=True)
+def depths(location, agency, within, out, screen, verbose):
+    water_obs(location, agency, within, out, screen, verbose, 'Groundwater Levels')
+
+
+@water.command()
+@click.option('--location')
+@click.option('--agency')
+@click.option('--within')
+@click.option('--out', default=None)
+@click.option('--screen', is_flag=True)
+@click.option('--verbose', is_flag=True)
+def elevations(location, agency, within, out, screen, verbose):
+    water_obs(location, agency, within, out, screen, verbose, 'Groundwater Elevations')
+
+
+def water_obs(location, agency, within, out, screen, verbose, dsname):
+    client = Client()
+    filter_args = []
+    if within:
+        wkt = make_wkt(within)
+        if wkt:
+            filter_args.append(make_within(wkt))
+    if agency:
+        filter_args.append(f"properties/agency eq '{agency}'")
+
+    name, query = None, None
+    if location:
+        if location.endswith('*'):
+            filter_args.append(f"startswith(name, '{location[:-1]}')")
+        else:
+            filter_args.append(f"name eq '{name}'")
+    if filter_args:
+        query = " and ".join(filter_args)
+
+    def obs_generator():
+        for loc in client.get_locations(query=query):
+            thing = client.get_thing(name='Water Well', location=loc)
+            ds = client.get_datastream(name=dsname, thing=thing)
+
+            obss = list(client.get_observations(ds, verbose=verbose))
+            count = len(obss)
+            yield ObsContainer(loc, thing, ds, obss)
+            # count = 0
+            # for obs in client.get_observations(ds, verbose=verbose):
+            #     count += 1
+            #     yield obs
+
+            click.secho(f"got observations {count} for location={loc['name']}, {loc['@iot.id']}", fg='green')
+
+    woutput(screen, out, obs_generator(), None, client.base_url)
 
 
 @cli.command()
@@ -71,8 +167,8 @@ def things(name, agency, verbose, out):
     "--pages",
     default=1,
     help="Number of pages of results to return. Each page is 1000 records by "
-    "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
-    "descending sorting",
+         "default. Results ordered by location.@iot.id ascending.  Use negative page numbers for "
+         "descending sorting",
 )
 @click.option("--expand")
 @click.option("--within")
@@ -82,13 +178,15 @@ def things(name, agency, verbose, out):
 @click.option(
     "--out",
     help="Location to save file. use file extension to define output type. "
-    "valid extensions are .shp, .csv, and .json. JSON output is used by "
-    "default",
+         "valid extensions are .shp, .csv, and .json. JSON output is used by "
+         "default",
 )
 @click.option("--url", default=None)
 @click.option("--group", default=None)
+@click.option("--names-only", is_flag=True)
 def locations(
-    name, agency, query, pages, expand, within, bbox, screen, verbose, out, url, group
+        name, agency, query, pages, expand, within, bbox, screen, verbose, out, url, group,
+        names_only
 ):
     client = Client(base_url=url)
 
@@ -110,28 +208,9 @@ def locations(
         )
         filterargs.append(f"st_within(location, geography'{bbox}')")
     elif within:
-        if os.path.isfile(within):
-            # try to read in file
-            if within.endswith(".geojson"):
-                pass
-            elif within.endswith(".shp"):
-                pass
-        else:
-            # load a raw WKT object
-            try:
-                wkt = shapely.wkt.loads(within)
-            except:
-                # maybe its a name of a county
-                wkt = get_county_polygon(within)
-                if wkt is None:
-                    # not a WKT object probably a sequence of points that should
-                    # be interpreted as a polygon
-                    try:
-                        wkt = Polygon(within.split(",")).wkt
-                    except:
-                        warning(f'Invalid within argument "{within}"')
+        wkt = make_wkt(within)
         if wkt:
-            filterargs.append(f"st_within(location, geography'{wkt}')")
+            filterargs.append(make_within(wkt))
 
     query = " and ".join(filterargs)
     # if verbose:
@@ -147,7 +226,37 @@ def locations(
         query,
         client.base_url,
         group=group,
+        names_only=names_only
     )
+
+
+def make_within(wkt):
+    return f"st_within(location, geography'{wkt}')"
+
+
+def make_wkt(within):
+    wkt = None
+    if os.path.isfile(within):
+        # try to read in file
+        if within.endswith(".geojson"):
+            pass
+        elif within.endswith(".shp"):
+            pass
+    else:
+        # load a raw WKT object
+        try:
+            wkt = shapely.wkt.loads(within)
+        except:
+            # maybe its a name of a county
+            wkt = get_county_polygon(within)
+            if wkt is None:
+                # not a WKT object probably a sequence of points that should
+                # be interpreted as a polygon
+                try:
+                    wkt = Polygon(within.split(",")).wkt
+                except:
+                    warning(f'Invalid within argument "{within}"')
+    return wkt
 
 
 def statelookup(shortname):
@@ -213,13 +322,19 @@ def woutput(screen, out, records_generator, *args, **kw):
     if not screen and not out:
         out = "out.json"
 
+    print('screen', screen, out)
     if screen and out:
         records_generator = list(records_generator)
 
-    if screen:
+    names_only = kw.get('names_only', False)
+    if screen or names_only:
         for i, r in enumerate(records_generator):
+            if names_only:
+                msg = r['name']
+            else:
+                msg = f"{pprint.pformat(r)}\n"
             click.secho(f"{i + 1} -------------------", fg="yellow")
-            click.secho(f"{pprint.pformat(r)}\n", fg="green")
+            click.secho(msg, fg="green")
 
     if out:
         if out.endswith(".shp"):
@@ -281,6 +396,9 @@ def shp_output(out, records_generator, query, base_url, group=False, **kw):
 
 def json_output(out, records_generator, query, base_url, **kw):
     records = list(records_generator)
+    if isinstance(records[0], ObsContainer):
+        records = [ri.tojson() for ri in records]
+
     data = {"data": records, "query": query, "base_url": base_url}
     with open(out, "w") as wfile:
         json.dump(data, wfile, indent=2)
@@ -289,10 +407,18 @@ def json_output(out, records_generator, query, base_url, **kw):
 
 def csv_output(out, records_generator, query, base_url, **kw):
     with open(out, "w") as wfile:
-        if out.endswith(".csv"):
-            writer = csv.writer(wfile)
-            count = 0
-            for emp in records_generator:
+        writer = csv.writer(wfile)
+        count = 0
+
+        for emp in records_generator:
+            if isinstance(emp, ObsContainer):
+                if count == 0:
+                    writer.writerow(emp.header())
+
+                rows = emp.torow()
+                writer.writerows(rows)
+                count += len(rows)
+            else:
                 if count == 0:
                     # Writing headers of CSV file
                     header = emp.keys()
@@ -300,9 +426,9 @@ def csv_output(out, records_generator, query, base_url, **kw):
 
                 # Writing data of CSV file
                 writer.writerow(emp.values())
-                count += 1
+            count += 1
 
-            nrecords = count
+        nrecords = count
 
     return nrecords
 
