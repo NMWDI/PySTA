@@ -69,11 +69,11 @@ class BaseST:
         else:
             params = []
             if limit:
-                params.append(f'$top={limit}')
+                params.append(f"$top={limit}")
 
             if orderby:
-                if not orderby.startswith('$orderby'):
-                    orderby = f'$orderby={orderby}'
+                if not orderby.startswith("$orderby"):
+                    orderby = f"$orderby={orderby}"
                 params.append(orderby)
 
             if query:
@@ -123,8 +123,16 @@ class BaseST:
             if resp.status_code == 200:
                 return True
 
-    def get(self, query, entity=None, pages=None, expand=None,
-            limit=None, verbose=False, orderby=None):
+    def get(
+        self,
+        query,
+        entity=None,
+        pages=None,
+        expand=None,
+        limit=None,
+        verbose=False,
+        orderby=None,
+    ):
 
         if pages and pages < 0:
             pages = abs(pages)
@@ -136,11 +144,13 @@ class BaseST:
                     return
 
             if verbose:
-                pv = ''
+                pv = ""
                 if pages:
-                    pv = '/{pages}'
+                    pv = "/{pages}"
 
-                verbose_message(f"getting page={page_count + 1}{pv} - url={request['url']}")
+                verbose_message(
+                    f"getting page={page_count + 1}{pv} - url={request['url']}"
+                )
                 # verbose_message("-------------- Request -----------------")
                 # verbose_message(request["url"])
                 # verbose_message("----------------------------------------")
@@ -148,7 +158,7 @@ class BaseST:
             resp = self._send_request(request)
             resp = self._parse_response(request, resp)
             if not resp:
-                click.secho(request['url'], fg='red')
+                click.secho(request["url"], fg="red")
                 return
 
             if not resp["value"]:
@@ -166,11 +176,17 @@ class BaseST:
                 except KeyError:
                     return
 
-            yield from get_items({"method": "get", "url": next_url}, page_count + 1, yielded)
+            yield from get_items(
+                {"method": "get", "url": next_url}, page_count + 1, yielded
+            )
 
         start_request = self._generate_request(
-            "get", query=query, entity=entity, orderby=orderby,
-            expand=expand, limit=limit
+            "get",
+            query=query,
+            entity=entity,
+            orderby=orderby,
+            expand=expand,
+            limit=limit,
         )
         yield from get_items(start_request, 0, 0)
 
@@ -565,5 +581,9 @@ class Client:
             datastream = datastream["@iot.id"]
         entity = f"Datastreams({datastream})/Observations"
 
-        yield from Datastreams(None, self._session, self._connection).get(None, entity=entity, **kw)
+        yield from Datastreams(None, self._session, self._connection).get(
+            None, entity=entity, **kw
+        )
+
+
 # ============= EOF =============================================
