@@ -68,7 +68,12 @@ class BaseST:
             url = f"{url}({self.iotid})"
         else:
             params = []
+            if limit:
+                params.append(f'$top={limit}')
+
             if orderby:
+                if not orderby.startswith('$orderby'):
+                    orderby = f'$orderby={orderby}'
                 params.append(orderby)
 
             if query:
@@ -118,42 +123,56 @@ class BaseST:
             if resp.status_code == 200:
                 return True
 
-    def get(self, query, entity=None, pages=None, expand=None, verbose=False):
-        orderby = None
+    def get(self, query, entity=None, pages=None, expand=None,
+            limit=None, verbose=False, orderby=None):
+
         if pages and pages < 0:
             pages = abs(pages)
             orderby = "$orderby=id desc"
 
-        def get_items(request, page_count):
+        def get_items(request, page_count, yielded):
             if pages:
                 if page_count >= pages:
                     return
 
             if verbose:
-                verbose_message(f"getting page={page_count + 1}/{pages}")
-                verbose_message("-------------- Request -----------------")
-                verbose_message(request["url"])
-                verbose_message("----------------------------------------")
+                pv = ''
+                if pages:
+                    pv = '/{pages}'
+
+                verbose_message(f"getting page={page_count + 1}{pv} - url={request['url']}")
+                # verbose_message("-------------- Request -----------------")
+                # verbose_message(request["url"])
+                # verbose_message("----------------------------------------")
 
             resp = self._send_request(request)
             resp = self._parse_response(request, resp)
+            if not resp:
+                click.secho(request['url'], fg='red')
+                return
+
             if not resp["value"]:
                 warning("no records found")
                 return
             else:
                 for v in resp["value"]:
+                    if limit and yielded >= limit:
+                        return
+
+                    yielded += 1
                     yield v
                 try:
                     next_url = resp["@iot.nextLink"]
                 except KeyError:
                     return
 
-            yield from get_items({"method": "get", "url": next_url}, page_count + 1)
+            yield from get_items({"method": "get", "url": next_url}, page_count + 1, yielded)
 
         start_request = self._generate_request(
-            "get", query=query, entity=entity, orderby=orderby, expand=expand
+            "get", query=query, entity=entity, orderby=orderby,
+            expand=expand, limit=limit
         )
-        yield from get_items(start_request, 0)
+        yield from get_items(start_request, 0, 0)
 
     def put(self, dry=False, check_exists=True):
         if self._validate_payload():
@@ -501,14 +520,14 @@ class Client:
             query = f"name eq '{name}'"
         yield from ObservedProperties(None, self._session, self._connection).get(query)
 
-    def get_datastreams(self, query=None, entity=None):
-        yield from Datastreams(None, self._session, self._connection).get(query, entity)
+    def get_datastreams(self, query=None, **kw):
+        yield from Datastreams(None, self._session, self._connection).get(query, **kw)
 
     def get_locations(self, query=None, **kw):
         yield from Locations(None, self._session, self._connection).get(query, **kw)
 
-    def get_things(self, query=None, entity=None):
-        yield from Things(None, self._session, self._connection).get(query, entity)
+    def get_things(self, query=None, **kw):
+        yield from Things(None, self._session, self._connection).get(query, **kw)
 
     def get_location(self, query=None, name=None):
         if name is not None:
@@ -527,7 +546,7 @@ class Client:
         if name is not None:
             query = f"name eq '{name}'"
 
-        return next(self.get_things(query, entity))
+        return next(self.get_things(query, entity=entity))
 
     def get_datastream(self, query=None, name=None, thing=None):
 
@@ -539,16 +558,12 @@ class Client:
         if name is not None:
             query = f"name eq '{name}'"
 
-        return next(self.get_datastreams(query, entity))
+        return next(self.get_datastreams(query, entity=entity))
 
     def get_observations(self, datastream, **kw):
         if isinstance(datastream, dict):
             datastream = datastream["@iot.id"]
         entity = f"Datastreams({datastream})/Observations"
 
-        yield from Datastreams(None, self._session, self._connection).get(
-            None, entity, **kw
-        )
-
-
+        yield from Datastreams(None, self._session, self._connection).get(None, entity=entity, **kw)
 # ============= EOF =============================================

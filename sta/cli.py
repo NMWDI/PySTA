@@ -84,28 +84,32 @@ def water():
 
 
 @water.command()
-@click.option("--location")
-@click.option("--agency")
-@click.option("--within")
-@click.option("--out", default=None)
-@click.option("--screen", is_flag=True)
-@click.option("--verbose", is_flag=True)
-def depths(location, agency, within, out, screen, verbose):
-    water_obs(location, agency, within, out, screen, verbose, "Groundwater Levels")
+# query options
+@click.option('--location')
+@click.option('--agency')
+@click.option('--within')
+@click.option('--last', default=0)
+# output options
+@click.option('--out', default=None)
+@click.option('--screen', is_flag=True)
+@click.option('--verbose', is_flag=True)
+def depths(location, agency, within, last, out, screen, verbose):
+    water_obs(location, agency, within, last, out, screen, verbose, 'Groundwater Levels')
 
 
 @water.command()
-@click.option("--location")
-@click.option("--agency")
-@click.option("--within")
-@click.option("--out", default=None)
-@click.option("--screen", is_flag=True)
-@click.option("--verbose", is_flag=True)
-def elevations(location, agency, within, out, screen, verbose):
-    water_obs(location, agency, within, out, screen, verbose, "Groundwater Elevations")
+@click.option('--location')
+@click.option('--agency')
+@click.option('--within')
+@click.option('--last', default=0)
+@click.option('--out', default=None)
+@click.option('--screen', is_flag=True)
+@click.option('--verbose', is_flag=True)
+def elevations(location, agency, within, last, out, screen, verbose):
+    water_obs(location, agency, within, last, out, screen, verbose, 'Groundwater Elevations')
 
 
-def water_obs(location, agency, within, out, screen, verbose, dsname):
+def water_obs(location, agency, within, last, out, screen, verbose, dsname):
     client = Client()
     filter_args = []
     if within:
@@ -129,7 +133,14 @@ def water_obs(location, agency, within, out, screen, verbose, dsname):
             thing = client.get_thing(name="Water Well", location=loc)
             ds = client.get_datastream(name=dsname, thing=thing)
 
-            obss = list(client.get_observations(ds, verbose=verbose))
+            orderby = None
+            limit = None
+            if last:
+                limit = last
+                orderby = 'phenomenonTime desc'
+
+            obss = list(client.get_observations(ds, verbose=verbose, limit=limit, orderby=orderby))
+
             count = len(obss)
             yield ObsContainer(loc, thing, ds, obss)
             # count = 0
@@ -137,10 +148,7 @@ def water_obs(location, agency, within, out, screen, verbose, dsname):
             #     count += 1
             #     yield obs
 
-            click.secho(
-                f"got observations {count} for location={loc['name']}, {loc['@iot.id']}",
-                fg="green",
-            )
+            click.secho(f"got observations {count} for location={loc['name']}, {loc['@iot.id']}\n", fg='green')
 
     woutput(screen, out, obs_generator(), None, client.base_url)
 
