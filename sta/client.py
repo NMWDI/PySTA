@@ -293,7 +293,7 @@ class Locations(BaseST):
                 "description": "A single position",
                 "type": "array",
                 "minItems": 2,
-                "items": [{"type": "number"}, {"type": "number"}],
+                "items": {"type": "number"},
                 "additionalItems": False,
             },
             "positionArray": {
@@ -585,5 +585,9 @@ class Client:
             None, entity=entity, **kw
         )
 
+if __name__ == '__main__':
+    payload = {}
+    l = Locations(payload, None, None)
+    l._validate_payload()
 
 # ============= EOF =============================================
