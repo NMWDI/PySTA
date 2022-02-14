@@ -21,7 +21,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysta",
-    version="0.0.25",
+    version="0.0.26",
     author="Jake Ross",
     description="Python SensorThings Client",
     long_description=long_description,

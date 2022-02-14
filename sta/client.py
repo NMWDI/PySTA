@@ -203,7 +203,7 @@ class BaseST:
 
     def getfirst(self, *args, **kw):
         try:
-            return self.get(*args, **kw)
+            return next(self.get(*args, **kw))
         except StopIteration:
             return
 
