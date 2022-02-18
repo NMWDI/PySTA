@@ -21,7 +21,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysta",
-    version="0.0.26",
+    version="0.0.27",
     author="Jake Ross",
     description="Python SensorThings Client",
     long_description=long_description,
@@ -37,16 +37,13 @@ setup(
         "pyproj",
         "requests",
         "jsonschema",
-        "pyodata",
         "pyyaml",
-        "pyshp",
-        "shapely",
     ],
-    entry_points={
-        "console_scripts": [
-            "sta = sta.cli:cli",
-        ],
-    },
+    # entry_points={
+    #     "console_scripts": [
+    #         "sta = sta.cli:cli",
+    #     ],
+    # },
     python_requires=">=3.6",
     # include_package_data=True,
     packages=["sta"],
