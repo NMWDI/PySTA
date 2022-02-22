@@ -21,7 +21,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysta",
-    version="0.0.27",
+    version="0.0.28",
     author="Jake Ross",
     description="Python SensorThings Client",
     long_description=long_description,
@@ -33,10 +33,8 @@ setup(
     ],
     install_requires=[
         "Click",
-        "paho-mqtt",
-        "pyproj",
         "requests",
-        "jsonschema",
+        "jsonschema==3",
         "pyyaml",
     ],
     # entry_points={
