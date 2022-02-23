@@ -522,6 +522,7 @@ class Client:
 
     def patch_location(self, iotid, payload, dry=False):
         location = Locations(payload, self._session, self._connection)
+        location.iotid = iotid
         location.patch(dry)
         return location
 
