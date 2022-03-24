@@ -485,6 +485,10 @@ class Client:
     def base_url(self):
         return self._connection["base_url"]
 
+    def locations(self):
+        loc = Locations(None, self._session, self._connection)
+        return loc.get(None, verbose=True)
+
     def put_sensor(self, payload, dry=False):
         sensor = Sensors(payload, self._session, self._connection)
         sensor.put(dry)
