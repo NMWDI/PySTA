@@ -591,8 +591,10 @@ class Client:
         )
 
     def get_observation(self, ptime, result, **kw):
-        query = f'phenomenonTime eq {ptime} and result eq {result}'
-        gen = Observations(None, self._session, self._connection).get(query, entity='Observations', **kw)
+        query = f"phenomenonTime eq {ptime} and result eq {result}"
+        gen = Observations(None, self._session, self._connection).get(
+            query, entity="Observations", **kw
+        )
         try:
             return next(gen)
         except StopIteration:
