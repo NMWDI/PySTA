@@ -590,10 +590,21 @@ class Client:
             None, entity=entity, **kw
         )
 
+    def get_observation(self, ptime, result, **kw):
+        query = f'phenomenonTime eq {ptime} and result eq {result}'
+        gen = Observations(None, self._session, self._connection).get(query, entity='Observations', **kw)
+        try:
+            return next(gen)
+        except StopIteration:
+            return
+
 
 if __name__ == "__main__":
-    payload = {}
-    l = Locations(payload, None, None)
-    l._validate_payload()
+    # payload = {}
+    # l = Locations(payload, None, None)
+    # l._validate_payload()
+    # obs = Observations({}, None, None)
+    c = Client()
+    print(c.get_observation("2022-07-17T13:12:29.000Z", 12.5044))
 
 # ============= EOF =============================================
