@@ -550,11 +550,11 @@ class Client:
     def get_things(self, query=None, **kw):
         yield from Things(None, self._session, self._connection).get(query, **kw)
 
-    def get_location(self, query=None, name=None):
+    def get_location(self, query=None, name=None, **kw):
         if name is not None:
             query = f"name eq '{name}'"
         try:
-            return next(self.get_locations(query))
+            return next(self.get_locations(query, **kw))
         except StopIteration:
             pass
 
