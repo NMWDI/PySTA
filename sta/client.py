@@ -106,7 +106,6 @@ class BaseST:
             if resp.status_code == 200:
                 return resp.json()
         elif request["method"] == "post":
-
             if dry:
                 return True
 
@@ -133,7 +132,6 @@ class BaseST:
         verbose=False,
         orderby=None,
     ):
-
         if pages and pages < 0:
             pages = abs(pages)
             orderby = "$orderby=id desc"
@@ -570,7 +568,6 @@ class Client:
         return next(self.get_things(query, entity=entity))
 
     def get_datastream(self, query=None, name=None, thing=None):
-
         entity = None
         if thing:
             if isinstance(thing, dict):

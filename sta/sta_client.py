@@ -152,7 +152,6 @@ class STAClient:
         unit=None,
         otype=None,
     ):
-
         if unit is None:
             unit = FOOT
         if otype is None:
@@ -242,7 +241,6 @@ class STAClient:
     ):
         lid = self.get_location_id(name)
         if lid is None:
-
             geometry = None
             if utm:
                 geometry = make_geometry_point_from_utm(*utm)
